@@ -1,5 +1,11 @@
 ﻿// Configuration File for Barbarian Lab, use '⩶' to mark sections and use '//' to make comments.
 
+⩶ Miscellaneous
+Max Level Width = 30
+Max Level Depth = 30
+Max Enemy Count = 8 // Set this to -1 or below to remove the enemy cap.
+Array Concat Threshold = 800 // How many subvalues arrays have to reach before they're concatenated. Set to 0 or below to never concatenate arrays.
+
 ⩶ Characters
 Green Knight = 2
 Blue Knight = 3
@@ -39,29 +45,29 @@ Grass Path = 2 | NoCollision | FluctuatingHeight | 107 | 175 | 121
 Hedge = 3 | Collision | FluctuatingHeight | 83 | 133 | 93
 Stone Spike = 4 | Collision | FluctuatingHeight | 142 | 142 | 142
 Tree = 5 | Collision | FluctuatingHeight | 110 | 156 | 104
-Grass Path (Alt) = 6 | NoCollision | FluctuatingHeight | 112 | 182 | 126
+Grass Path (Alt) = 6 | NoCollision | FluctuatingHeight | 127 | 182 | 112
 Volcano Path = 7 | NoCollision | FluctuatingHeight | 119 | 110 | 103
-Volcano Spike = 8 | Collision | FluctuatingHeight | 112 | 98 | 87
+Volcano Spike = 8 | Collision | FluctuatingHeight | 102 | 88 | 78
 Lava = 9 | Collision | StaticHeight | 255 | 181 | 109
-Volcano Plateau = 10 | NoCollision | FluctuatingHeight | 102 | 88 | 78
+Volcano Plateau = 10 | NoCollision | FluctuatingHeight | 112 | 98 | 87
 Vertical Bridge = 11 | NoCollision | StaticHeight | 170 | 122 | 89
-Vertcal Dark Bridge = 12 | NoCollision | StaticHeight | 119 | 103 | 101
-Volcano Path (Alt) = 13 | NoCollision | FluctuatingHeight | 128 | 118 | 110
+Vertcal Dark Bridge = 12 | NoCollision | StaticHeight | 106 | 104 | 91
+Volcano Path (Alt) = 13 | NoCollision | FluctuatingHeight | 141 | 133 | 127
 Horizontal Bridge = 14 | NoCollision | StaticHeight | 210 | 152 | 112
-Horizontal Dark Bridge = 15 | NoCollision | StaticHeight | 128 | 116 | 113
-Mountain Path = 16 | NoCollision | StaticHeight | 163 | 124 | 105
+Horizontal Dark Bridge = 15 | NoCollision | StaticHeight | 126 | 128 | 113
+Mountain Path = 16 | NoCollision | StaticHeight | 201 | 123 | 103
 Dirt Path = 17 | NoCollision | FluctuatingHeight | 152 | 115 | 87
 Water = 18 | Collision | StaticHeight | 126 | 178 | 250
-Castle Path = 19 | NoCollision | FluctuatingHeight | 118 | 164 | 184
+Castle Path = 19 | NoCollision | FluctuatingHeight | 153 | 174 | 182
 Castle Carpet = 20 | NoCollision | StaticHeight | 177 | 117 | 160
-Castle Cylinder = 21 | Collision | StaticHeight | 85 | 121 | 158
-Training Dummy = 22 | Collision | FluctuatingHeight | 159 | 137 | 112
-Castle Wall, Side Torch = 23 | Collision | StaticHeight | 150 | 143 | 143
+Castle Cylinder = 21 | Collision | StaticHeight | 120 | 149 | 171
+Training Dummy = 22 | Collision | FluctuatingHeight | 158 | 145 | 149
+Castle Wall, Side Torch = 23 | Collision | StaticHeight | 116 | 133 | 139
 Castle Wall = 24 | Collision | StaticHeight | 91 | 131 | 168
-Castle Wall, Front Torch = 25 | Collision | StaticHeight | 150 | 143 | 145
+Castle Wall, Front Torch = 25 | Collision | StaticHeight | 110 | 138 | 148
 Castle Wall (Alt) = 26 | Collision | StaticHeight | 91 | 131 | 168
 Castle Gate = 27 | Collision | StaticHeight | 203 | 184 | 140
-Ice Path = 28 | NoCollision | FluctuatingHeight | 194 | 230 | 243
+Ice Path = 28 | NoCollision | FluctuatingHeight | 172 | 221 | 239
 Snow Path = 29 | NoCollision | FluctuatingHeight | 208 | 243 | 255
 Ice Spike = 30 | Collision | FluctuatingHeight | 156 | 198 | 236
 Snow Tree = 31 | Collision | FluctuatingHeight | 125 | 173 | 152

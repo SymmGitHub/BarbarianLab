@@ -63,7 +63,7 @@
             fileToolStripMenuItem = new ToolStripMenuItem();
             openLevelToolStripMenuItem = new ToolStripMenuItem();
             newLevelToolStripMenuItem = new ToolStripMenuItem();
-            copyLevelArrayToolStripMenuItem = new ToolStripMenuItem();
+            saveLevelArrayToolStripMenuItem = new ToolStripMenuItem();
             saveScreenshotToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
             unselectToolsToolStripMenuItem = new ToolStripMenuItem();
@@ -90,7 +90,7 @@
             ex = new NumericUpDown();
             ey = new NumericUpDown();
             levelWidth = new NumericUpDown();
-            levelHeight = new NumericUpDown();
+            levelDepth = new NumericUpDown();
             levelMinX = new NumericUpDown();
             levelMinY = new NumericUpDown();
             e_Type = new NumericUpDown();
@@ -117,7 +117,7 @@
             ((System.ComponentModel.ISupportInitialize)ex).BeginInit();
             ((System.ComponentModel.ISupportInitialize)ey).BeginInit();
             ((System.ComponentModel.ISupportInitialize)levelWidth).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)levelHeight).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)levelDepth).BeginInit();
             ((System.ComponentModel.ISupportInitialize)levelMinX).BeginInit();
             ((System.ComponentModel.ISupportInitialize)levelMinY).BeginInit();
             ((System.ComponentModel.ISupportInitialize)e_Type).BeginInit();
@@ -234,9 +234,9 @@
             label11.AutoSize = true;
             label11.Location = new Point(840, 70);
             label11.Name = "label11";
-            label11.Size = new Size(92, 20);
+            label11.Size = new Size(88, 20);
             label11.TabIndex = 30;
-            label11.Text = "Level Height";
+            label11.Text = "Level Depth";
             // 
             // e_Name
             // 
@@ -491,7 +491,7 @@
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openLevelToolStripMenuItem, newLevelToolStripMenuItem, copyLevelArrayToolStripMenuItem, saveScreenshotToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openLevelToolStripMenuItem, newLevelToolStripMenuItem, saveLevelArrayToolStripMenuItem, saveScreenshotToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(46, 24);
             fileToolStripMenuItem.Text = "File";
@@ -500,7 +500,7 @@
             // 
             openLevelToolStripMenuItem.Name = "openLevelToolStripMenuItem";
             openLevelToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.O;
-            openLevelToolStripMenuItem.Size = new Size(254, 26);
+            openLevelToolStripMenuItem.Size = new Size(250, 26);
             openLevelToolStripMenuItem.Text = "Open Level";
             openLevelToolStripMenuItem.Click += openLevelToolStripMenuItem_Click;
             // 
@@ -508,23 +508,23 @@
             // 
             newLevelToolStripMenuItem.Name = "newLevelToolStripMenuItem";
             newLevelToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
-            newLevelToolStripMenuItem.Size = new Size(254, 26);
+            newLevelToolStripMenuItem.Size = new Size(250, 26);
             newLevelToolStripMenuItem.Text = "New Level";
             newLevelToolStripMenuItem.Click += newLevelToolStripMenuItem_Click;
             // 
-            // copyLevelArrayToolStripMenuItem
+            // saveLevelArrayToolStripMenuItem
             // 
-            copyLevelArrayToolStripMenuItem.Name = "copyLevelArrayToolStripMenuItem";
-            copyLevelArrayToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.C;
-            copyLevelArrayToolStripMenuItem.Size = new Size(254, 26);
-            copyLevelArrayToolStripMenuItem.Text = "Copy Level Array";
-            copyLevelArrayToolStripMenuItem.Click += copyLevelArrayToolStripMenuItem_Click;
+            saveLevelArrayToolStripMenuItem.Name = "saveLevelArrayToolStripMenuItem";
+            saveLevelArrayToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.S;
+            saveLevelArrayToolStripMenuItem.Size = new Size(250, 26);
+            saveLevelArrayToolStripMenuItem.Text = "Save Level Array";
+            saveLevelArrayToolStripMenuItem.Click += copyLevelArrayToolStripMenuItem_Click;
             // 
             // saveScreenshotToolStripMenuItem
             // 
             saveScreenshotToolStripMenuItem.Name = "saveScreenshotToolStripMenuItem";
             saveScreenshotToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.P;
-            saveScreenshotToolStripMenuItem.Size = new Size(254, 26);
+            saveScreenshotToolStripMenuItem.Size = new Size(250, 26);
             saveScreenshotToolStripMenuItem.Text = "Save Screenshot";
             saveScreenshotToolStripMenuItem.Click += saveScreenshotToolStripMenuItem_Click;
             // 
@@ -729,18 +729,18 @@
             levelWidth.Value = new decimal(new int[] { 1, 0, 0, 0 });
             levelWidth.ValueChanged += UpdateLevelDimensions;
             // 
-            // levelHeight
+            // levelDepth
             // 
-            levelHeight.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            levelHeight.BackColor = Color.FromArgb(200, 180, 200);
-            levelHeight.Location = new Point(978, 68);
-            levelHeight.Maximum = new decimal(new int[] { 50, 0, 0, 0 });
-            levelHeight.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            levelHeight.Name = "levelHeight";
-            levelHeight.Size = new Size(142, 27);
-            levelHeight.TabIndex = 44;
-            levelHeight.Value = new decimal(new int[] { 1, 0, 0, 0 });
-            levelHeight.ValueChanged += UpdateLevelDimensions;
+            levelDepth.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            levelDepth.BackColor = Color.FromArgb(200, 180, 200);
+            levelDepth.Location = new Point(978, 68);
+            levelDepth.Maximum = new decimal(new int[] { 50, 0, 0, 0 });
+            levelDepth.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            levelDepth.Name = "levelDepth";
+            levelDepth.Size = new Size(142, 27);
+            levelDepth.TabIndex = 44;
+            levelDepth.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            levelDepth.ValueChanged += UpdateLevelDimensions;
             // 
             // levelMinX
             // 
@@ -776,6 +776,7 @@
             e_Type.Name = "e_Type";
             e_Type.Size = new Size(68, 27);
             e_Type.TabIndex = 51;
+            e_Type.ValueChanged += e_Type_ValueChanged;
             // 
             // p1x
             // 
@@ -934,7 +935,7 @@
             Controls.Add(e_Type);
             Controls.Add(levelMinY);
             Controls.Add(levelMinX);
-            Controls.Add(levelHeight);
+            Controls.Add(levelDepth);
             Controls.Add(levelWidth);
             Controls.Add(ey);
             Controls.Add(ex);
@@ -974,7 +975,7 @@
             ((System.ComponentModel.ISupportInitialize)ex).EndInit();
             ((System.ComponentModel.ISupportInitialize)ey).EndInit();
             ((System.ComponentModel.ISupportInitialize)levelWidth).EndInit();
-            ((System.ComponentModel.ISupportInitialize)levelHeight).EndInit();
+            ((System.ComponentModel.ISupportInitialize)levelDepth).EndInit();
             ((System.ComponentModel.ISupportInitialize)levelMinX).EndInit();
             ((System.ComponentModel.ISupportInitialize)levelMinY).EndInit();
             ((System.ComponentModel.ISupportInitialize)e_Type).EndInit();
@@ -1016,7 +1017,7 @@
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem openLevelToolStripMenuItem;
-        private ToolStripMenuItem copyLevelArrayToolStripMenuItem;
+        private ToolStripMenuItem saveLevelArrayToolStripMenuItem;
         private ToolStripMenuItem editToolStripMenuItem;
         private ToolStripMenuItem newLevelToolStripMenuItem;
         private Label label17;
@@ -1042,7 +1043,7 @@
         private ToolStripMenuItem viewTileColorToolStripMenuItem;
         private ToolStripMenuItem viewTileHeightMapToolStripMenuItem;
         private NumericUpDown levelWidth;
-        private NumericUpDown levelHeight;
+        private NumericUpDown levelDepth;
         private NumericUpDown levelMinX;
         private NumericUpDown levelMinY;
         private NumericUpDown e_Type;

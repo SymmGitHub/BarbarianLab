@@ -8,30 +8,57 @@ using System.Threading.Tasks;
 
 public class BoB_LevelData
 {
-    public static string ArrayString(Level l)
+    public static string[] GetLevelArray(Level l)
     {
-        string output = "";
-        output += $"{l.minX},{l.minY},{l.maxX},{l.maxY},";
-        output += $"{l.players[0].x},{l.players[0].y},";
-        output += $"{l.players[1].x},{l.players[1].y},";
-        output += $"{l.players[2].x},{l.players[2].y},";
-        output += $"{l.players[3].x},{l.players[3].y},";
-        output += $"{l.enemy_type},";
-        output += $"{l.enemies.Length},";
+        List<string> substrings = new List<string>();
+        substrings.Add(l.minX.ToString());
+        substrings.Add(l.minY.ToString());
+        substrings.Add(l.maxX.ToString());
+        substrings.Add(l.maxY.ToString());
+        substrings.Add(l.players[0].x.ToString());
+        substrings.Add(l.players[0].y.ToString());
+        substrings.Add(l.players[1].x.ToString());
+        substrings.Add(l.players[1].y.ToString());
+        substrings.Add(l.players[2].x.ToString());
+        substrings.Add(l.players[2].y.ToString());
+        substrings.Add(l.players[3].x.ToString());
+        substrings.Add(l.players[3].y.ToString());
+        substrings.Add(l.enemy_type.ToString());
+        substrings.Add(l.enemies.Length.ToString());
         for (int i = 0; i < l.enemies.Length; i++)
         {
-            output += $"{l.enemies[i].x},{l.enemies[i].y},";
-            Debug.WriteLine("Writing enemy data: " + i);
+            substrings.Add(l.enemies[i].x.ToString());
+            substrings.Add(l.enemies[i].y.ToString());
         }
-        int width = l.maxX - l.minX;
-        int height = l.maxY - l.minY;
-        for (int i = 0; i < (width * height); i++)
+        for (int i = 0; i < l.tiles.Length; i++)
         {
-            output += $"{l.tiles[i].id},{l.tiles[i].h},{l.tiles[i].col},";
-            Debug.WriteLine("Writing tile data: " + i);
+            substrings.Add(l.tiles[i].id.ToString());
+            substrings.Add(l.tiles[i].h.ToString());
+            substrings.Add(l.tiles[i].col.ToString());
         }
-        output += "0";
-        return output;
+        substrings.Add("0");
+
+        //output += $"{l.minX},{l.minY},{l.maxX},{l.maxY},";
+        //output += $"{l.players[0].x},{l.players[0].y},";
+        //output += $"{l.players[1].x},{l.players[1].y},";
+        //output += $"{l.players[2].x},{l.players[2].y},";
+        //output += $"{l.players[3].x},{l.players[3].y},";
+        //output += $"{l.enemy_type},";
+        //output += $"{l.enemies.Length},";
+        //for (int i = 0; i < l.enemies.Length; i++)
+        //{
+        //    output += $"{l.enemies[i].x},{l.enemies[i].y},";
+        //    Debug.WriteLine("Writing enemy data: " + i);
+        //}
+        //int width = l.maxX - l.minX;
+        //int height = l.maxY - l.minY;
+        //for (int i = 0; i < (width * height); i++)
+        //{
+        //    output += $"{l.tiles[i].id},{l.tiles[i].h},{l.tiles[i].col},";
+        //    Debug.WriteLine("Writing tile data: " + i);
+        //}
+        //output += "0";
+        return substrings.ToArray();
     }
     public struct Level
     {
@@ -154,17 +181,26 @@ public class BoB_LevelData
                 }
                 catch
                 {
-                    MessageBox.Show($"Error parsing tile data...{Environment.NewLine}Stopped at substring: [{readIndex}], broken substring: '{substrings[readIndex]}'");
+                    try
+                    {
+                        MessageBox.Show($"Error parsing tile data...{Environment.NewLine}Stopped at substring: [{readIndex}], broken substring: '{substrings[readIndex]}'");
+                    } 
+                    catch 
+                    {
+                        MessageBox.Show("Error parsing tile data...");
+                    }
                     return l;
                 }
             }
 
             int width = l.maxX - l.minX;
             int height = l.maxY - l.minY;
-            if (tileList[tileList.Count - 1].id == 0 && tileList.Count == 1 + (width * height))
+            if (tileList[tileList.Count - 1].id == 0 && tileList.Count > (width * height))
             {
-                Debug.WriteLine("Trimming off final empty tile");
-                tileList.RemoveAt(tileList.Count - 1);
+                int trimCount = tileList.Count - (width * height);
+                Debug.WriteLine($"Trimming off ({trimCount}) additional tiles...");
+                tileList.RemoveRange(width * height, trimCount);
+                //tileList.RemoveAt(tileList.Count - 1);
             }
             l.tiles = tileList.ToArray();
             l.parse_succeeded = true;

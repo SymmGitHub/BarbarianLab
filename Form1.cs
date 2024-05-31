@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Net.Http.Headers;
@@ -31,6 +32,9 @@ namespace BarbarianLab
         int viewType = 0;
         bool banCursor = false;
         bool toolActing = false;
+        int maxEnemyCount = 8;
+        int concatThreshold = 800;
+
 
         public Form1()
         {
@@ -39,6 +43,40 @@ namespace BarbarianLab
         private void Form1_Load(object sender, EventArgs e)
         {
             config.ParseConfig(AppDomain.CurrentDomain.BaseDirectory + "\\Config.txt");
+            if (config.sections.ContainsKey("Miscellaneous"))
+            {
+                if (config.sections["Miscellaneous"].settings.ContainsKey("Max Level Width"))
+                {
+                    int newMaxX;
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Width"].data[0], out newMaxX))
+                    {
+                        if (newMaxX < 1)
+                        {
+                            newMaxX = 1;
+                        }
+                        levelWidth.Maximum = newMaxX;
+                    }
+                    int newMaxY;
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Depth"].data[0], out newMaxY))
+                    {
+                        if (newMaxY < 1)
+                        {
+                            newMaxY = 1;
+                        }
+                        levelDepth.Maximum = newMaxY;
+                    }
+                    int enemyMax;
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Enemy Count"].data[0], out enemyMax))
+                    {
+                        maxEnemyCount = enemyMax;
+                    }
+                    int concatThresh;
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Array Concat Threshold"].data[0], out concatThresh))
+                    {
+                        concatThreshold = concatThresh;
+                    }
+                }
+            }
             if (config.sections.ContainsKey("Characters"))
             {
                 foreach (string character in config.sections["Characters"].settings.Keys)
@@ -109,13 +147,68 @@ namespace BarbarianLab
         }
         private void copyLevelArrayToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            Clipboard.SetText($"new Array({BoB_LevelData.ArrayString(level)});");
+            string[] substrings = GetLevelArray(level);
+            string finalCode = "_loc3_[0] = new Array(";
+            int concatGoal = substrings.Length;
+            Debug.WriteLine($"Preparing to write ({substrings.Length}) substrings...");
+            if (concatThreshold > 0)
+            {
+                if (substrings.Length > concatThreshold)
+                {
+                    concatGoal = substrings.Length / 2;
+                }
+                if (substrings.Length > (2 * concatThreshold))
+                {
+                    concatGoal = concatThreshold;
+                }
+            }
+            int substringsRead = 0;
+            bool concated = false;
+            for (int i = 0; i < substrings.Length; i++)
+            {
+                finalCode += substrings[i];
+                substringsRead++;
+                if (i != substrings.Length - 1)
+                {
+                    if (substringsRead == concatGoal)
+                    {
+                        substringsRead = 0;
+                        if (concated)
+                        {
+                            finalCode += ")";
+                        }
+                        finalCode += $");{Environment.NewLine}   _loc3_[0] = f_ConcatArray(_loc3_[0],new Array(";
+                        concated = true;
+                    }
+                    else
+                    {
+                        finalCode += ",";
+                    }
+                }
+            }
+            if (concated)
+            {
+                finalCode += ")";
+            }
+            finalCode += ");";
+            SaveLevel save = new SaveLevel(finalCode);
+            save.ShowDialog();
         }
         private void LoadLevelData()
         {
             loading = true;
-            levelWidth.Value = (level.maxX - level.minX);
-            levelHeight.Value = (level.maxY - level.minY);
+            int newWidth = (level.maxX - level.minX);
+            if (newWidth > levelWidth.Maximum)
+            {
+                levelWidth.Maximum = newWidth;
+            }
+            levelWidth.Value = newWidth;
+            int newDepth = (level.maxY - level.minY);
+            if (newDepth > levelDepth.Maximum)
+            {
+                levelDepth.Maximum = newDepth;
+            }
+            levelDepth.Value = newDepth;
             levelMinX.Value = level.minX;
             levelMinY.Value = level.minY;
             p1x.Value = level.players[0].x;
@@ -245,7 +338,7 @@ namespace BarbarianLab
                 int width = level.maxX - level.minX;
                 int height = level.maxY - level.minY;
                 int widthDifference = (int)levelWidth.Value - width;
-                int heightDifference = (int)levelHeight.Value - height;
+                int depthDifference = (int)levelDepth.Value - height;
                 List<BoB_Tile> tileList = level.tiles.ToList();
                 BoB_Tile t = new BoB_Tile();
                 t.id = 1;
@@ -279,9 +372,9 @@ namespace BarbarianLab
                 }
 
                 // Update Height 
-                if (heightDifference > 0)
+                if (depthDifference > 0)
                 {
-                    for (int h = 0; h < heightDifference; h++)
+                    for (int h = 0; h < depthDifference; h++)
                     {
                         for (int w = 0; w < width; w++)
                         {
@@ -291,9 +384,9 @@ namespace BarbarianLab
                         height = level.maxY - level.minY;
                     }
                 }
-                else if (heightDifference < 0)
+                else if (depthDifference < 0)
                 {
-                    for (int h = 0; h < -heightDifference; h++)
+                    for (int h = 0; h < -depthDifference; h++)
                     {
                         tileList.RemoveRange(((height - 1) * width), width);
                         level.maxY--;
@@ -442,13 +535,13 @@ namespace BarbarianLab
             UpdateEnemyData(sender, e);
             UpdateEnemyList();
         }
-        private void e_Type_TextChanged(object sender, EventArgs e)
+        private void e_Type_ValueChanged(object sender, EventArgs e)
         {
             if (loading) return;
             loading = true;
             try
             {
-                int id = int.Parse(e_Type.Text);
+                int id = (int)e_Type.Value;
                 if (characterNames.ContainsKey(id))
                 {
                     e_Name.Text = characterNames[id];
@@ -500,6 +593,7 @@ namespace BarbarianLab
         }
         private void UpdateEnemyList()
         {
+            if (!level.parse_succeeded) return;
             string charaName = "Unknown";
             int prevIndex = EnemyList.SelectedIndex;
             try
@@ -529,16 +623,21 @@ namespace BarbarianLab
         }
         private void AddEnemy_Click(object sender, EventArgs e)
         {
-            BoB_Position pos = new BoB_Position()
-            { x = 0, y = 0 };
-            List<BoB_Position> enemy_positions = level.enemies.ToList();
-            enemy_positions.Add(pos);
-            level.enemies = enemy_positions.ToArray();
-            UpdateEnemyList();
+            if (!level.parse_succeeded) return;
+            if (level.enemies.Length < maxEnemyCount || maxEnemyCount <= 0)
+            {
+                BoB_Position pos = new BoB_Position()
+                { x = 0, y = 0 };
+                List<BoB_Position> enemy_positions = level.enemies.ToList();
+                enemy_positions.Add(pos);
+                level.enemies = enemy_positions.ToArray();
+                UpdateEnemyList();
+            }
         }
         private void DeleteEnemy_Click(object sender, EventArgs e)
         {
-            if (level.enemies.Length > 0)
+            if (!level.parse_succeeded) return;
+            if (level.enemies.Length > 1)
             {
                 List<BoB_Position> enemy_positions = level.enemies.ToList();
                 int index = EnemyList.Items.Count - 1;
@@ -559,11 +658,18 @@ namespace BarbarianLab
         {
             lowestHeight = 0;
             highestHeight = 0;
+            bool setFirstHeight = false;
             for (int i = 0; i < level.tiles.Length; i++)
             {
                 BoB_Tile t = level.tiles[i];
                 if (t.id > 1)
                 {
+                    if (!setFirstHeight)
+                    {
+                        setFirstHeight = true;
+                        lowestHeight = t.h;
+                        highestHeight = t.h;
+                    }
                     decimal newH = 0;
                     try
                     {
@@ -744,6 +850,11 @@ namespace BarbarianLab
                 int i = (tileY * width) + tileX;
                 BoB_Tile t = level.tiles[i];
 
+                if (!mouseDragVer && !rightClickVer)
+                {
+                    affectedTiles = new Dictionary<int, BoB_Tile>();
+                    toolActing = true;
+                }
                 if (rightClickVer)
                 {
                     t_Collision.Checked = true;
@@ -755,12 +866,7 @@ namespace BarbarianLab
                         t_Collision.Checked = false;
                     }
                 }
-                else if (!mouseDragVer)
-                {
-                    affectedTiles = new Dictionary<int, BoB_Tile>();
-                    toolActing = true;
-                }
-                if (!affectedTiles.ContainsKey(i))
+                else if (!affectedTiles.ContainsKey(i))
                 {
                     affectedTiles.Add(i, t);
                     switch (toolType)
