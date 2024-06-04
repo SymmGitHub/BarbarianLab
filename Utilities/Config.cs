@@ -52,6 +52,8 @@ namespace BarbarianLab.Utilities
                     }
                     sections.Add(sectionName, section);
                 }
+                read.Close();
+                read.Dispose();
             }
             else
             {
