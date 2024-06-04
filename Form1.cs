@@ -160,6 +160,39 @@ namespace BarbarianLab
             loading = false;
             levelSelectionBox.SelectedIndex = levelSelectionBox.Items.Count - 1;
         }
+        private void AutosaveLevel()
+        {
+            if (levelSelectionBox.SelectedIndex < 0 || levelSelectionBox.SelectedIndex >= allLevels.Count) return;
+            allLevels[levelSelectionBox.SelectedIndex] = cur_level;
+            int prevIndex = levelSelectionBox.SelectedIndex;
+            loading = true;
+            RefreshLevelList();
+            levelSelectionBox.SelectedIndex = prevIndex;
+            loading = false;
+        }
+        private void RemoveLevel()
+        {
+            allLevels.RemoveAt(levelSelectionBox.SelectedIndex);
+            int prevIndex = levelSelectionBox.SelectedIndex;
+            loading = true;
+            RefreshLevelList();
+            loading = false;
+            levelSelectionBox.SelectedIndex = prevIndex - 1;
+            if (levelSelectionBox.SelectedIndex == -1)
+            {
+                if (levelSelectionBox.Items.Count > 1)
+                {
+                    levelSelectionBox.SelectedIndex = 0;
+                }
+                else
+                {
+                    levelSelectionBox.Text = "";
+                    cur_level.parse_succeeded = false;
+                    LevelMap.BackgroundImage = null;
+                }
+
+            }
+        }
         private void RefreshLevelList()
         {
             if (allLevels.Count > 0)
@@ -812,6 +845,30 @@ namespace BarbarianLab
         // ==========================================
         // ============= LEVEL MAP ==================
         // ==========================================
+        private void levelSelectionBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (loading || levelSelectionBox.SelectedIndex < 0 || allLevels.Count <= 0) return;
+            loading = true;
+            try
+            {
+                cur_level = allLevels[levelSelectionBox.SelectedIndex];
+                LoadLevelData();
+            }
+            catch { }
+            loading = false;
+        }
+        private void removeLevel_Click(object sender, EventArgs e)
+        {
+            if (allLevels.Count <= 0) return;
+            if (ModifierKeys == Keys.Control)
+            {
+                RemoveLevel();
+            }
+            else if (MessageBox.Show("Are you sure?", "Delete Level", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                RemoveLevel();
+            }
+        }
         private void UpdateLevelHeights()
         {
             lowestHeight = 0;
@@ -1221,64 +1278,6 @@ namespace BarbarianLab
                     return Color.FromArgb(255, t, p, v);
                 default:
                     return Color.FromArgb(255, v, p, q);
-            }
-        }
-        private void levelSelectionBox_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (loading || levelSelectionBox.SelectedIndex < 0 || allLevels.Count <= 0) return;
-            loading = true;
-            try
-            {
-                cur_level = allLevels[levelSelectionBox.SelectedIndex];
-                LoadLevelData();
-            }
-            catch { }
-            loading = false;
-        }
-
-        private void removeLevel_Click(object sender, EventArgs e)
-        {
-            if (allLevels.Count <= 0) return;
-            if (ModifierKeys == Keys.Control)
-            {
-                RemoveLevel();
-            }
-            else if (MessageBox.Show("Are you sure?", "Delete Level", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                RemoveLevel();
-            }
-        }
-        private void AutosaveLevel()
-        {
-            if (levelSelectionBox.SelectedIndex < 0 || levelSelectionBox.SelectedIndex >= allLevels.Count) return;
-            allLevels[levelSelectionBox.SelectedIndex] = cur_level;
-            int prevIndex = levelSelectionBox.SelectedIndex;
-            loading = true;
-            RefreshLevelList();
-            levelSelectionBox.SelectedIndex = prevIndex;
-            loading = false;
-        }
-        private void RemoveLevel()
-        {
-            allLevels.RemoveAt(levelSelectionBox.SelectedIndex);
-            int prevIndex = levelSelectionBox.SelectedIndex;
-            loading = true;
-            RefreshLevelList();
-            loading = false;
-            levelSelectionBox.SelectedIndex = prevIndex - 1;
-            if (levelSelectionBox.SelectedIndex == -1)
-            {
-                if (levelSelectionBox.Items.Count > 1)
-                {
-                    levelSelectionBox.SelectedIndex = 0;
-                }
-                else
-                {
-                    levelSelectionBox.Text = "";
-                    cur_level.parse_succeeded = false;
-                    LevelMap.BackgroundImage = null;
-                }
-
             }
         }
     }
