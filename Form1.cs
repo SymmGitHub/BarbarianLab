@@ -422,8 +422,8 @@ namespace BarbarianLab
             }
             RefreshEnemyList();
             UpdateLevelHeights();
-            UpdateLevelImage(LevelMap, new EventArgs());
             loading = false;
+            UpdateLevelImage(LevelMap, new EventArgs());
 
             if (EnemyList.Items.Count > 0)
             {
@@ -900,7 +900,7 @@ namespace BarbarianLab
         {
             int width = cur_level.maxX - cur_level.minX;
             int height = cur_level.maxY - cur_level.minY;
-            if (width <= 0 || height <= 0 || !cur_level.parse_succeeded) return;
+            if (width <= 0 || height <= 0 || !cur_level.parse_succeeded || loading) return;
             LevelMap.BackgroundImage = LevelImage();
         }
         private void LevelMap_MouseDown(object sender, MouseEventArgs e)
@@ -1233,17 +1233,18 @@ namespace BarbarianLab
             {
                 if (t.id > 1)
                 {
-                    Color heightMap = Color.FromArgb(0, 255, 0);
-                    decimal heightRange = highestHeight - lowestHeight;
+                    Color heightMap = ColorFromHSV(120, 0.5, 0.75);
+                    float heightRange = (float)(highestHeight - lowestHeight);
                     if (heightRange <= 0)
                     {
                         return heightMap;
                     }
-                    double hue = heightMap.GetHue();
-                    decimal heightAboveLow = t.h - lowestHeight;
-                    decimal relativeHeight = heightAboveLow / heightRange;
-                    hue = 240 * (double)relativeHeight;
-                    return ColorFromHSV(hue, 1.0, 1.0);
+                    float heightAboveLow = (float)(t.h - lowestHeight);
+                    float relativeHeight = heightAboveLow / heightRange;
+                    double hue = 120f + (240f * (relativeHeight - 0.5f));
+                    double sat = 0.5f + Math.Abs(relativeHeight - 0.5f); // gets less saturated the closer to the center it becomes.
+                    double val = 0.75f + (0.5 * Math.Abs(relativeHeight - 0.5f)); // gets slightly darker the closer to the center it becomes.
+                    return ColorFromHSV(hue, sat, val);
                 }
                 return Color.Black;
             }
@@ -1257,13 +1258,11 @@ namespace BarbarianLab
         {
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
-
             value = value * 255;
             int v = Convert.ToInt32(value);
             int p = Convert.ToInt32(value * (1 - saturation));
             int q = Convert.ToInt32(value * (1 - f * saturation));
             int t = Convert.ToInt32(value * (1 - (1 - f) * saturation));
-
             switch (hi)
             {
                 case 0:
