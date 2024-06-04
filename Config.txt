@@ -4,7 +4,8 @@
 Max Level Width = 30
 Max Level Depth = 30
 Max Enemy Count = 8 // Set this to -1 or below to remove the enemy cap.
-Array Concat Threshold = 800 // How many subvalues arrays have to reach before they're concatenated. Set to 0 or below to never concatenate arrays.
+Array Concat Substring Limit = 999 // How many subvalues that arrays have to reach before they're concatenated. Set to 0 or below to never concatenate arrays.
+Level Init Substring Limit = 6000 // How many subvalues a group of arrays have to reach before another init function has to be made.
 
 ⩶ Characters
 Green Knight = 2

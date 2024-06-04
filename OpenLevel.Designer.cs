@@ -28,56 +28,57 @@
         /// </summary>
         private void InitializeComponent()
         {
+            Save = new Button();
             levelText = new TextBox();
-            Open = new Button();
             SuspendLayout();
+            // 
+            // Save
+            // 
+            Save.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            Save.BackColor = Color.FromArgb(15, 10, 15);
+            Save.ForeColor = SystemColors.Control;
+            Save.Location = new Point(559, 405);
+            Save.Name = "Save";
+            Save.Size = new Size(162, 36);
+            Save.TabIndex = 46;
+            Save.Text = "Open Level(s)";
+            Save.UseVisualStyleBackColor = false;
+            Save.Click += Open_Click;
             // 
             // levelText
             // 
-            levelText.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            levelText.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             levelText.BackColor = Color.FromArgb(200, 180, 200);
             levelText.ForeColor = Color.Black;
             levelText.Location = new Point(12, 12);
+            levelText.MaxLength = 999999999;
+            levelText.Multiline = true;
             levelText.Name = "levelText";
-            levelText.ScrollBars = ScrollBars.Horizontal;
-            levelText.Size = new Size(423, 27);
-            levelText.TabIndex = 1;
+            levelText.ScrollBars = ScrollBars.Both;
+            levelText.Size = new Size(709, 387);
+            levelText.TabIndex = 45;
             levelText.TabStop = false;
-            levelText.Text = "new Array( Enter Level Data Here );";
-            levelText.Enter += levelText_Enter;
-            // 
-            // Open
-            // 
-            Open.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            Open.BackColor = Color.FromArgb(15, 10, 15);
-            Open.ForeColor = SystemColors.Control;
-            Open.Location = new Point(165, 75);
-            Open.Name = "Open";
-            Open.Size = new Size(115, 36);
-            Open.TabIndex = 42;
-            Open.Text = "Open Level";
-            Open.UseVisualStyleBackColor = false;
-            Open.Click += Open_Click;
+            levelText.WordWrap = false;
             // 
             // OpenLevel
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 20, 30);
-            ClientSize = new Size(447, 123);
-            Controls.Add(Open);
+            ClientSize = new Size(732, 453);
+            Controls.Add(Save);
             Controls.Add(levelText);
             FormBorderStyle = FormBorderStyle.FixedDialog;
             Name = "OpenLevel";
             StartPosition = FormStartPosition.CenterParent;
-            Text = "OpenLevel";
+            Text = "Open Level";
+            Load += OpenLevel_Load;
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-
+        private Button Save;
         private TextBox levelText;
-        private Button Open;
     }
 }

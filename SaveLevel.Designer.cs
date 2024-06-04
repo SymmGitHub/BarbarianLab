@@ -37,7 +37,7 @@
             Save.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             Save.BackColor = Color.FromArgb(15, 10, 15);
             Save.ForeColor = SystemColors.Control;
-            Save.Location = new Point(455, 205);
+            Save.Location = new Point(605, 405);
             Save.Name = "Save";
             Save.Size = new Size(115, 36);
             Save.TabIndex = 44;
@@ -51,11 +51,12 @@
             levelText.BackColor = Color.FromArgb(200, 180, 200);
             levelText.ForeColor = Color.Black;
             levelText.Location = new Point(12, 12);
+            levelText.Margin = new Padding(3, 3, 0, 3);
             levelText.MaxLength = 999999999;
             levelText.Multiline = true;
             levelText.Name = "levelText";
             levelText.ScrollBars = ScrollBars.Both;
-            levelText.Size = new Size(558, 187);
+            levelText.Size = new Size(708, 387);
             levelText.TabIndex = 43;
             levelText.TabStop = false;
             levelText.WordWrap = false;
@@ -65,12 +66,12 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(30, 20, 30);
-            ClientSize = new Size(582, 253);
+            ClientSize = new Size(732, 453);
             Controls.Add(Save);
             Controls.Add(levelText);
             Name = "SaveLevel";
             ShowIcon = false;
-            Text = "SaveLevel";
+            Text = "Save Level";
             Load += SaveLevel_Load;
             ResumeLayout(false);
             PerformLayout();

@@ -26,9 +26,18 @@ namespace BarbarianLab
         }
         private void Save_Click(object sender, EventArgs e)
         {
+            string newText = "";
+            for (int i = 0; i < levelText.Lines.Length; i++)
+            {
+                string line = levelText.Lines[i].Split("//", StringSplitOptions.None)[0];
+                if (!String.IsNullOrEmpty(line))
+                {
+                    newText += line + Environment.NewLine;
+                }
+            }
             try
             {
-                Clipboard.SetText(levelText.Text);
+                Clipboard.SetText(newText.TrimEnd());
             }
             catch { MessageBox.Show("Failed to copy to clipboard, please try again."); }
         }

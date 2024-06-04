@@ -13,16 +13,16 @@ namespace BarbarianLab
 {
     public partial class Form1 : Form
     {
-        Level level = new Level();
-        Bitmap recentShot;
+        Level cur_level = new Level();
+        List<Level> allLevels = new List<Level>();
+        Bitmap? recentShot;
         Config config = new Config();
         Dictionary<int, string> characterNames = new Dictionary<int, string>();
         Dictionary<int, BoB_Tile> affectedTiles = new Dictionary<int, BoB_Tile>();
-        List<Level> levelHistory = new List<Level>();
-        Color[] tileColors;
-        Image[] tileSprites;
-        bool[] tileCollision;
-        bool[] tileFluctuation;
+        Color[] tileColors = new Color[0];
+        Image[] tileSprites = new Image[0];
+        bool[] tileCollision = new bool[0];
+        bool[] tileFluctuation = new bool[0];
         bool loading = false;
         public int tileX = -1;
         public int tileY = -1;
@@ -33,8 +33,8 @@ namespace BarbarianLab
         bool banCursor = false;
         bool toolActing = false;
         int maxEnemyCount = 8;
-        int concatThreshold = 800;
-
+        int concatThreshold = 999;
+        int levelThreshold = 6000;
 
         public Form1()
         {
@@ -71,9 +71,14 @@ namespace BarbarianLab
                         maxEnemyCount = enemyMax;
                     }
                     int concatThresh;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Array Concat Threshold"].data[0], out concatThresh))
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Array Concat Substring Limit"].data[0], out concatThresh))
                     {
                         concatThreshold = concatThresh;
+                    }
+                    int levelThresh;
+                    if (int.TryParse(config.sections["Miscellaneous"].settings["Level Init Substring Limit"].data[0], out levelThresh))
+                    {
+                        levelThreshold = levelThresh;
                     }
                 }
             }
@@ -132,103 +137,257 @@ namespace BarbarianLab
         // ==========================================
         // ============== TOOLSTRIP =================
         // ==========================================
-        private void openLevelToolStripMenuItem_Click(object sender, EventArgs e)
+        private void openLevelsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             OpenLevel open = new OpenLevel();
             if (open.ShowDialog() == DialogResult.OK)
             {
                 if (loading) return;
-                level = open.level;
-                affectedTiles = new Dictionary<int, BoB_Tile>();
-                levelHistory = new List<Level>();
-                levelHistory.Add(level);
-                LoadLevelData();
+                loading = true;
+                int firstNew = allLevels.Count;
+                allLevels.AddRange(open.levels);
+                RefreshLevelList();
+                loading = false;
+                levelSelectionBox.SelectedIndex = Math.Clamp(firstNew, -1, levelSelectionBox.Items.Count - 1);
             }
         }
-        private void copyLevelArrayToolStripMenuItem_Click(object sender, EventArgs e)
+        private void newLevelToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string[] substrings = GetLevelArray(level);
-            string finalCode = "_loc3_[0] = new Array(";
-            int concatGoal = substrings.Length;
-            Debug.WriteLine($"Preparing to write ({substrings.Length}) substrings...");
-            if (concatThreshold > 0)
+            allLevels.Add(Level.ParseLevels($"new Array({Level.DefaultLevelString()});", false)[0]);
+            affectedTiles = new Dictionary<int, BoB_Tile>();
+            loading = true;
+            RefreshLevelList();
+            loading = false;
+            levelSelectionBox.SelectedIndex = levelSelectionBox.Items.Count - 1;
+        }
+        private void RefreshLevelList()
+        {
+            if (allLevels.Count > 0)
             {
-                if (substrings.Length > concatThreshold)
+                levelSelectionBox.Items.Clear();
+                for (int i = 0; i < allLevels.Count; i++)
                 {
-                    concatGoal = substrings.Length / 2;
-                }
-                if (substrings.Length > (2 * concatThreshold))
-                {
-                    concatGoal = concatThreshold;
-                }
-            }
-            int substringsRead = 0;
-            bool concated = false;
-            for (int i = 0; i < substrings.Length; i++)
-            {
-                finalCode += substrings[i];
-                substringsRead++;
-                if (i != substrings.Length - 1)
-                {
-                    if (substringsRead == concatGoal)
+                    Level l = allLevels[i];
+                    int width = l.maxX - l.minX;
+                    int depth = l.maxY - l.minY;
+                    string e_name = $"Unknown";
+                    if (characterNames.ContainsKey(l.enemy_type))
                     {
-                        substringsRead = 0;
-                        if (concated)
-                        {
-                            finalCode += ")";
-                        }
-                        finalCode += $");{Environment.NewLine}   _loc3_[0] = f_ConcatArray(_loc3_[0],new Array(";
-                        concated = true;
+                        e_name = characterNames[l.enemy_type];
                     }
-                    else
+                    string name = $"{e_name} ({width},{depth})";
+                    string finalName = name;
+                    int copyIndex = 2;
+                    while (levelSelectionBox.Items.Contains(finalName))
                     {
-                        finalCode += ",";
+                        finalName = name + $" ({copyIndex})";
+                        copyIndex++;
                     }
+                    levelSelectionBox.Items.Add(finalName);
                 }
             }
-            if (concated)
+        }
+        private void exportLevelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
             {
-                finalCode += ")";
+                string saveText = $"// Copy the level array below!{Environment.NewLine}" +
+                $"// Make sure both the _loc_ number and index{Environment.NewLine}" +
+                $"// match the level you're replacing...{Environment.NewLine}{Environment.NewLine}" +
+                $"{Level.ExportedLevelString(cur_level, "_loc3_", 0, concatThreshold)}";
+                SaveLevel save = new SaveLevel(saveText);
+                save.ShowDialog();
             }
-            finalCode += ");";
-            SaveLevel save = new SaveLevel(finalCode);
+            catch { }
+        }
+        private void exportPlaylistToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (allLevels.Count <= 0) return;
+
+            // First group all the levels, dividing them into groups to not obliterate JPexs's byte limits.
+            int globalSubstringCount = 0;
+            List<Level> curLevelGroup = new List<Level>();
+            List<Level[]> levelGroups = new List<Level[]>();
+            for (int i = 0; i < allLevels.Count; i++)
+            {
+                curLevelGroup.Add(allLevels[i]);
+                globalSubstringCount += Level.LevelSubstrings(allLevels[i]).Length;
+                if (globalSubstringCount > (levelThreshold * (levelGroups.Count + 1)))
+                {
+                    levelGroups.Add(curLevelGroup.ToArray());
+                    curLevelGroup = new List<Level>();
+                }
+            }
+            levelGroups.Add(curLevelGroup.ToArray());
+
+
+            // Create function f_Levels_InitLevels
+            int curLevelIndex = 0;
+            string saveText = $"// Copy the level init functions below!{Environment.NewLine}" +
+            $"// If you don't want levels to be shuffled,{Environment.NewLine}" +
+            $"// erase the if condition containing f_ShuffleArray{Environment.NewLine}" +
+            Environment.NewLine +
+            $"function f_Levels_InitLevels(o_game){Environment.NewLine}" +
+            "{" + Environment.NewLine +
+            $"   if(_root.a_levels != undefined){Environment.NewLine}" +
+            "   {" + Environment.NewLine +
+            $"      o_game.a_levels = _root.a_levels;{Environment.NewLine}" +
+            $"      trace(\"REUSE\");{Environment.NewLine}" +
+            $"      return undefined;{Environment.NewLine}" +
+            "   }" + Environment.NewLine +
+            $"   _root.a_newLevel = new Array({Level.DefaultLevelString()}){Environment.NewLine}" +
+            $"   var levels = new Array({allLevels.Count});{Environment.NewLine}" +
+            $"   _root.a_levels = levels;{Environment.NewLine}" +
+            $"   o_game.a_levels = levels;{Environment.NewLine}";
+
+            // Write each of the first level group's levels
+            for (int i = 0; i < levelGroups[0].Length; i++)
+            {
+                saveText += $"   {Level.ExportedLevelString(levelGroups[0][i], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
+                curLevelIndex++;
+            }
+
+            // Write calls for each addendum level group function
+            for (int i = 1; i < levelGroups.Count; i++)
+            {
+                saveText += $"   f_Levels_InitLevels{i + 1}(o_game);" + Environment.NewLine;
+            }
+
+            // Write shuffling
+            saveText +=
+            $"   if(n_debugLevel == undefined){Environment.NewLine}" +
+            "   {" + Environment.NewLine +
+            $"      f_ShuffleArray(levels,levels.length);{Environment.NewLine}" +
+            "   }" + Environment.NewLine +
+            "}" + Environment.NewLine;
+
+            // Write each addendum function
+            for (int i = 1; i < levelGroups.Count; i++)
+            {
+                saveText +=
+                $"function f_Levels_InitLevels{i + 1}(o_game){Environment.NewLine}" +
+                "{" + Environment.NewLine +
+                $"   var levels = _root.a_levels;{Environment.NewLine}";
+                for (int j = 0; j < levelGroups[i].Length; j++)
+                {
+                    saveText += $"   {Level.ExportedLevelString(levelGroups[i][j], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
+                    curLevelIndex++;
+                }
+                saveText +=
+                "}" + Environment.NewLine;
+            }
+
+            SaveLevel save = new SaveLevel(saveText);
             save.ShowDialog();
         }
+        private void saveScreenshotToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (recentShot == null) return;
+            SaveFileDialog save = new SaveFileDialog();
+            save.Filter = "Image File|*.png";
+            save.DefaultExt = ".png";
+            save.FileName = "level0.png";
+            save.Title = "Save Screenshot";
+            if (save.ShowDialog() == DialogResult.OK)
+            {
+                string filePath = save.FileName;
+                banCursor = true;
+                UpdateLevelImage(sender, e);
+                recentShot.MakeTransparent(Color.Black);
+                Bitmap bmp;
+                Graphics g = Graphics.FromImage(bmp = new Bitmap(recentShot.Width * 10, recentShot.Height * 10));
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                g.PixelOffsetMode = PixelOffsetMode.Half;
+                g.DrawImage(recentShot, 0, 0, recentShot.Width * 10, recentShot.Height * 10);
+                g.Dispose();
+                bmp.Save(filePath, ImageFormat.Png);
+                UpdateLevelImage(sender, e);
+                banCursor = false;
+            }
+        }
+        private void roundTileHeightsToThousandthsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < cur_level.tiles.Length; i++)
+            {
+                BoB_Tile t = cur_level.tiles[i];
+                t.h = Math.Round(t.h, 3);
+                cur_level.tiles[i] = t;
+            }
+        }
+        private void setAllTileCollisionsToDefaultsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < cur_level.tiles.Length; i++)
+            {
+                BoB_Tile t = cur_level.tiles[i];
+                if (t.id > 0 && t.id < tileCollision.Length)
+                {
+                    t.col = 0;
+                    if (tileCollision[t.id])
+                    {
+                        t.col = 1;
+                    }
+                    cur_level.tiles[i] = t;
+                }
+            }
+            UpdateLevelImage(sender, e);
+        }
+
+        private void heightMultiplyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            decimal multiplier;
+            if (!cur_level.parse_succeeded) return;
+            if (decimal.TryParse(heightMultiplierBox.Text, out multiplier))
+            {
+                for (int i = 0; i < cur_level.tiles.Length; i++)
+                {
+                    BoB_Tile t = cur_level.tiles[i];
+                    t.h *= multiplier;
+                    cur_level.tiles[i] = t;
+                }
+                UpdateLevelHeights();
+            }
+            else
+            {
+                MessageBox.Show("Height multiplier was invalid...");
+            }
+            UpdateLevelImage(sender, e);
+        }
+
         private void LoadLevelData()
         {
             loading = true;
-            int newWidth = (level.maxX - level.minX);
+            int newWidth = (cur_level.maxX - cur_level.minX);
             if (newWidth > levelWidth.Maximum)
             {
                 levelWidth.Maximum = newWidth;
             }
             levelWidth.Value = newWidth;
-            int newDepth = (level.maxY - level.minY);
+            int newDepth = (cur_level.maxY - cur_level.minY);
             if (newDepth > levelDepth.Maximum)
             {
                 levelDepth.Maximum = newDepth;
             }
             levelDepth.Value = newDepth;
-            levelMinX.Value = level.minX;
-            levelMinY.Value = level.minY;
-            p1x.Value = level.players[0].x;
-            p1y.Value = level.players[0].y;
-            p2x.Value = level.players[1].x;
-            p2y.Value = level.players[1].y;
-            p3x.Value = level.players[2].x;
-            p3y.Value = level.players[2].y;
-            p4x.Value = level.players[3].x;
-            p4y.Value = level.players[3].y;
-            if (level.enemy_type >= 2)
+            levelMinX.Value = cur_level.minX;
+            levelMinY.Value = cur_level.minY;
+            p1x.Value = cur_level.players[0].x;
+            p1y.Value = cur_level.players[0].y;
+            p2x.Value = cur_level.players[1].x;
+            p2y.Value = cur_level.players[1].y;
+            p3x.Value = cur_level.players[2].x;
+            p3y.Value = cur_level.players[2].y;
+            p4x.Value = cur_level.players[3].x;
+            p4y.Value = cur_level.players[3].y;
+            if (cur_level.enemy_type >= 2)
             {
-                e_Name.SelectedIndex = level.enemy_type - 2;
+                e_Name.SelectedIndex = cur_level.enemy_type - 2;
             }
-            e_Type.Text = level.enemy_type.ToString();
-            if (characterNames.ContainsKey(level.enemy_type))
+            e_Type.Text = cur_level.enemy_type.ToString();
+            if (characterNames.ContainsKey(cur_level.enemy_type))
             {
-                e_Name.Text = characterNames[level.enemy_type];
+                e_Name.Text = characterNames[cur_level.enemy_type];
             }
-            UpdateEnemyList();
+            RefreshEnemyList();
             UpdateLevelHeights();
             UpdateLevelImage(LevelMap, new EventArgs());
             loading = false;
@@ -335,11 +494,11 @@ namespace BarbarianLab
             loading = true;
             try
             {
-                int width = level.maxX - level.minX;
-                int height = level.maxY - level.minY;
+                int width = cur_level.maxX - cur_level.minX;
+                int height = cur_level.maxY - cur_level.minY;
                 int widthDifference = (int)levelWidth.Value - width;
                 int depthDifference = (int)levelDepth.Value - height;
-                List<BoB_Tile> tileList = level.tiles.ToList();
+                List<BoB_Tile> tileList = cur_level.tiles.ToList();
                 BoB_Tile t = new BoB_Tile();
                 t.id = 1;
                 t.h = 0;
@@ -354,8 +513,8 @@ namespace BarbarianLab
                         {
                             tileList.Insert((h * width) + width + h, t);
                         }
-                        level.maxX++;
-                        width = level.maxX - level.minX;
+                        cur_level.maxX++;
+                        width = cur_level.maxX - cur_level.minX;
                     }
                 }
                 else if (widthDifference < 0)
@@ -366,8 +525,8 @@ namespace BarbarianLab
                         {
                             tileList.RemoveAt(((h * width) + width) - (1 + h));
                         }
-                        level.maxX--;
-                        width = level.maxX - level.minX;
+                        cur_level.maxX--;
+                        width = cur_level.maxX - cur_level.minX;
                     }
                 }
 
@@ -380,8 +539,8 @@ namespace BarbarianLab
                         {
                             tileList.Add(t);
                         }
-                        level.maxY++;
-                        height = level.maxY - level.minY;
+                        cur_level.maxY++;
+                        height = cur_level.maxY - cur_level.minY;
                     }
                 }
                 else if (depthDifference < 0)
@@ -389,11 +548,12 @@ namespace BarbarianLab
                     for (int h = 0; h < -depthDifference; h++)
                     {
                         tileList.RemoveRange(((height - 1) * width), width);
-                        level.maxY--;
-                        height = level.maxY - level.minY;
+                        cur_level.maxY--;
+                        height = cur_level.maxY - cur_level.minY;
                     }
                 }
-                level.tiles = tileList.ToArray();
+                cur_level.tiles = tileList.ToArray();
+                AutosaveLevel();
             }
             catch { }
             loading = false;
@@ -401,46 +561,47 @@ namespace BarbarianLab
         }
         private void UpdateLevelMinValues(object sender, EventArgs e)
         {
-            if (loading || !level.parse_succeeded) return;
+            if (loading || !cur_level.parse_succeeded) return;
             loading = true;
             try
             {
                 int newMinX = (int)levelMinX.Value;
                 int newMinY = (int)levelMinY.Value;
-                int xOff = newMinX - level.minX;
-                int yOff = newMinY - level.minY;
-                level.minX = newMinX;
-                level.minY = newMinY;
-                level.maxX += xOff;
-                level.maxY += yOff;
-                for (int i = 0; i < level.players.Length; i++)
+                int xOff = newMinX - cur_level.minX;
+                int yOff = newMinY - cur_level.minY;
+                cur_level.minX = newMinX;
+                cur_level.minY = newMinY;
+                cur_level.maxX += xOff;
+                cur_level.maxY += yOff;
+                for (int i = 0; i < cur_level.players.Length; i++)
                 {
                     BoB_Position newPos = new BoB_Position();
-                    newPos.x = level.players[i].x + xOff;
-                    newPos.y = level.players[i].y + yOff;
-                    level.players[i] = newPos;
+                    newPos.x = cur_level.players[i].x + xOff;
+                    newPos.y = cur_level.players[i].y + yOff;
+                    cur_level.players[i] = newPos;
                 }
-                for (int i = 0; i < level.enemies.Length; i++)
+                for (int i = 0; i < cur_level.enemies.Length; i++)
                 {
                     BoB_Position newPos = new BoB_Position();
-                    newPos.x = level.enemies[i].x + xOff;
-                    newPos.y = level.enemies[i].y + yOff;
-                    level.enemies[i] = newPos;
+                    newPos.x = cur_level.enemies[i].x + xOff;
+                    newPos.y = cur_level.enemies[i].y + yOff;
+                    cur_level.enemies[i] = newPos;
                 }
-                p1x.Value = level.players[0].x;
-                p1y.Value = level.players[0].y;
-                p2x.Value = level.players[1].x;
-                p2y.Value = level.players[1].y;
-                p3x.Value = level.players[2].x;
-                p3y.Value = level.players[2].y;
-                p4x.Value = level.players[3].x;
-                p4y.Value = level.players[3].y;
+                p1x.Value = cur_level.players[0].x;
+                p1y.Value = cur_level.players[0].y;
+                p2x.Value = cur_level.players[1].x;
+                p2y.Value = cur_level.players[1].y;
+                p3x.Value = cur_level.players[2].x;
+                p3y.Value = cur_level.players[2].y;
+                p4x.Value = cur_level.players[3].x;
+                p4y.Value = cur_level.players[3].y;
 
                 if (EnemyList.SelectedIndex > -1)
                 {
-                    ex.Value = level.enemies[EnemyList.SelectedIndex].x;
-                    ey.Value = level.enemies[EnemyList.SelectedIndex].y;
+                    ex.Value = cur_level.enemies[EnemyList.SelectedIndex].x;
+                    ey.Value = cur_level.enemies[EnemyList.SelectedIndex].y;
                 }
+                AutosaveLevel();
             }
             catch { }
             loading = false;
@@ -448,7 +609,7 @@ namespace BarbarianLab
         }
         private void UpdatePlayerPositions(object sender, EventArgs e)
         {
-            if (loading || !level.parse_succeeded) return;
+            if (loading || !cur_level.parse_succeeded) return;
             loading = true;
             try
             {
@@ -472,7 +633,8 @@ namespace BarbarianLab
                     x = (int)p4x.Value,
                     y = (int)p4y.Value
                 };
-                level.players = new BoB_Position[4] { p1, p2, p3, p4 };
+                cur_level.players = new BoB_Position[4] { p1, p2, p3, p4 };
+                AutosaveLevel();
             }
             catch { }
             loading = false;
@@ -521,19 +683,13 @@ namespace BarbarianLab
         private void e_Name_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (loading) return;
-            loading = true;
-            try
-            {
-                int id = characterNames.FirstOrDefault(x => x.Value == e_Name.Text).Key;
-                e_Type.Text = id.ToString();
-                Level l = level;
-                l.enemy_type = id;
-                level = l;
-            }
-            catch { e_Type.Text = ""; }
-            loading = false;
+            int id = characterNames.FirstOrDefault(x => x.Value == e_Name.Text).Key;
+            e_Type.Text = id.ToString();
+            Level l = cur_level;
+            l.enemy_type = id;
+            cur_level = l;
             UpdateEnemyData(sender, e);
-            UpdateEnemyList();
+            RefreshEnemyList();
         }
         private void e_Type_ValueChanged(object sender, EventArgs e)
         {
@@ -547,42 +703,42 @@ namespace BarbarianLab
                     e_Name.Text = characterNames[id];
                 }
                 else e_Name.SelectedIndex = -1;
-                Level l = level;
+                Level l = cur_level;
                 l.enemy_type = id;
-                level = l;
+                cur_level = l;
             }
             catch { e_Name.SelectedIndex = -1; }
             loading = false;
             UpdateEnemyData(sender, e);
-            UpdateEnemyList();
+            RefreshEnemyList();
         }
         private void UpdateEnemyData(object sender, EventArgs e)
         {
-            if (loading || EnemyList.SelectedIndex < 0) return;
+            if (loading) return;
             loading = true;
-            try
+            if (EnemyList.SelectedIndex > -1)
             {
                 BoB_Position e_pos = new BoB_Position()
                 {
                     x = (int)ex.Value,
                     y = (int)ey.Value
                 };
-                Level l = level;
+                Level l = cur_level;
                 l.enemies[EnemyList.SelectedIndex] = e_pos;
-                level = l;
+                cur_level = l;
             }
-            catch { }
             loading = false;
+            AutosaveLevel();
             UpdateLevelImage(sender, e);
         }
         private void EnemyList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (EnemyList.SelectedIndex == -1 || loading || !level.parse_succeeded) return;
+            if (EnemyList.SelectedIndex == -1 || loading || !cur_level.parse_succeeded) return;
             loading = true;
             try
             {
-                ex.Value = level.enemies[EnemyList.SelectedIndex].x;
-                ey.Value = level.enemies[EnemyList.SelectedIndex].y;
+                ex.Value = cur_level.enemies[EnemyList.SelectedIndex].x;
+                ey.Value = cur_level.enemies[EnemyList.SelectedIndex].y;
             }
             catch
             {
@@ -591,14 +747,14 @@ namespace BarbarianLab
             }
             loading = false;
         }
-        private void UpdateEnemyList()
+        private void RefreshEnemyList()
         {
-            if (!level.parse_succeeded) return;
+            if (!cur_level.parse_succeeded) return;
             string charaName = "Unknown";
             int prevIndex = EnemyList.SelectedIndex;
             try
             {
-                int id = level.enemy_type;
+                int id = cur_level.enemy_type;
                 if (e_Name.SelectedIndex >= 0)
                 {
                     charaName = characterNames[id];
@@ -606,7 +762,7 @@ namespace BarbarianLab
             }
             catch { }
             EnemyList.Items.Clear();
-            for (int i = 0; i < level.enemies.Length; i++)
+            for (int i = 0; i < cur_level.enemies.Length; i++)
             {
                 EnemyList.Items.Add($"{charaName} {i + 1}");
             }
@@ -623,32 +779,34 @@ namespace BarbarianLab
         }
         private void AddEnemy_Click(object sender, EventArgs e)
         {
-            if (!level.parse_succeeded) return;
-            if (level.enemies.Length < maxEnemyCount || maxEnemyCount <= 0)
+            if (!cur_level.parse_succeeded) return;
+            if (cur_level.enemies.Length < maxEnemyCount || maxEnemyCount <= 0)
             {
                 BoB_Position pos = new BoB_Position()
                 { x = 0, y = 0 };
-                List<BoB_Position> enemy_positions = level.enemies.ToList();
+                List<BoB_Position> enemy_positions = cur_level.enemies.ToList();
                 enemy_positions.Add(pos);
-                level.enemies = enemy_positions.ToArray();
-                UpdateEnemyList();
+                cur_level.enemies = enemy_positions.ToArray();
+                AutosaveLevel();
+                RefreshEnemyList();
             }
         }
         private void DeleteEnemy_Click(object sender, EventArgs e)
         {
-            if (!level.parse_succeeded) return;
-            if (level.enemies.Length > 1)
+            if (!cur_level.parse_succeeded) return;
+            if (cur_level.enemies.Length > 1)
             {
-                List<BoB_Position> enemy_positions = level.enemies.ToList();
+                List<BoB_Position> enemy_positions = cur_level.enemies.ToList();
                 int index = EnemyList.Items.Count - 1;
                 if (EnemyList.SelectedIndex >= 0)
                 {
                     index = EnemyList.SelectedIndex;
                 }
                 enemy_positions.RemoveAt(index);
-                level.enemies = enemy_positions.ToArray();
+                cur_level.enemies = enemy_positions.ToArray();
+                AutosaveLevel();
             }
-            UpdateEnemyList();
+            RefreshEnemyList();
         }
 
         // ==========================================
@@ -659,9 +817,9 @@ namespace BarbarianLab
             lowestHeight = 0;
             highestHeight = 0;
             bool setFirstHeight = false;
-            for (int i = 0; i < level.tiles.Length; i++)
+            for (int i = 0; i < cur_level.tiles.Length; i++)
             {
-                BoB_Tile t = level.tiles[i];
+                BoB_Tile t = cur_level.tiles[i];
                 if (t.id > 1)
                 {
                     if (!setFirstHeight)
@@ -683,9 +841,9 @@ namespace BarbarianLab
         }
         private void UpdateLevelImage(object sender, EventArgs e)
         {
-            int width = level.maxX - level.minX;
-            int height = level.maxY - level.minY;
-            if (width <= 0 || height <= 0 || !level.parse_succeeded) return;
+            int width = cur_level.maxX - cur_level.minX;
+            int height = cur_level.maxY - cur_level.minY;
+            if (width <= 0 || height <= 0 || !cur_level.parse_succeeded) return;
             LevelMap.BackgroundImage = LevelImage();
         }
         private void LevelMap_MouseDown(object sender, MouseEventArgs e)
@@ -723,8 +881,8 @@ namespace BarbarianLab
             int prevX = tileX;
             int prevY = tileY;
             double tileScale;
-            int width = level.maxX - level.minX;
-            int height = level.maxY - level.minY;
+            int width = cur_level.maxX - cur_level.minX;
+            int height = cur_level.maxY - cur_level.minY;
             if (width == 0 || height == 0) return;
             double levelAspect = width / (double)height;
             double canvasAspect = LevelMap.Width / (double)LevelMap.Height;
@@ -759,14 +917,14 @@ namespace BarbarianLab
         }
         private Bitmap LevelImage()
         {
-            int width = level.maxX - level.minX;
-            int height = level.maxY - level.minY;
+            int width = cur_level.maxX - cur_level.minX;
+            int height = cur_level.maxY - cur_level.minY;
             Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
                 {
-                    BoB_Tile t = level.tiles[(y * width) + x];
+                    BoB_Tile t = cur_level.tiles[(y * width) + x];
                     Color pixCol = TileColor(t);
                     if (x == tileX && y == tileY && !banCursor)
                     {
@@ -792,18 +950,18 @@ namespace BarbarianLab
                             playerCol = Color.FromArgb(255, 180, 0); // Orange
                             break;
                     }
-                    BoB_Position p_pos = level.players[i];
-                    int relativeX = p_pos.x - level.minX;
-                    int relativeY = p_pos.y - level.minY;
+                    BoB_Position p_pos = cur_level.players[i];
+                    int relativeX = p_pos.x - cur_level.minX;
+                    int relativeY = p_pos.y - cur_level.minY;
                     if (relativeX >= 0 && relativeX < width && relativeY >= 0 && relativeY < height)
                     {
                         bmp.SetPixel(relativeX, relativeY, playerCol);
                     }
                 }
-                foreach (BoB_Position e_pos in level.enemies)
+                foreach (BoB_Position e_pos in cur_level.enemies)
                 {
-                    int relativeX = e_pos.x - level.minX;
-                    int relativeY = e_pos.y - level.minY;
+                    int relativeX = e_pos.x - cur_level.minX;
+                    int relativeY = e_pos.y - cur_level.minY;
                     if (relativeX >= 0 && relativeX < width && relativeY >= 0 && relativeY < height)
                     {
                         bmp.SetPixel(relativeX, relativeY, Color.FromArgb(200, 50, 115)); // Dark Pink
@@ -846,9 +1004,9 @@ namespace BarbarianLab
         {
             if (tileX != -1 && tileY != -1)
             {
-                int width = level.maxX - level.minX;
+                int width = cur_level.maxX - cur_level.minX;
                 int i = (tileY * width) + tileX;
-                BoB_Tile t = level.tiles[i];
+                BoB_Tile t = cur_level.tiles[i];
 
                 if (!mouseDragVer && !rightClickVer)
                 {
@@ -878,14 +1036,14 @@ namespace BarbarianLab
                             if (ModifierKeys == Keys.Control && !mouseDragVer)
                             {
                                 // Replace all tiles with the target's ID with the new tile
-                                uint targetID = level.tiles[i].id;
-                                for (int a = 0; a < level.tiles.Length; a++)
+                                uint targetID = cur_level.tiles[i].id;
+                                for (int a = 0; a < cur_level.tiles.Length; a++)
                                 {
-                                    if (level.tiles[a].id == targetID)
+                                    if (cur_level.tiles[a].id == targetID)
                                     {
-                                        BoB_Tile recoloredTile = level.tiles[a];
+                                        BoB_Tile recoloredTile = cur_level.tiles[a];
                                         recoloredTile.id = tileID;
-                                        level.tiles[a] = recoloredTile;
+                                        cur_level.tiles[a] = recoloredTile;
                                     }
                                 }
                             }
@@ -906,11 +1064,11 @@ namespace BarbarianLab
                                 {
                                     t.col = 1;
                                 }
-                                level.tiles[i] = t;
+                                cur_level.tiles[i] = t;
                             }
                             else
                             {
-                                level.tiles[i] = t;
+                                cur_level.tiles[i] = t;
                             }
                             break;
                         case "erase":
@@ -920,18 +1078,18 @@ namespace BarbarianLab
                             if (ModifierKeys == Keys.Control && !mouseDragVer)
                             {
                                 // Replace all tiles with the target's ID with the new tile
-                                uint targetID = level.tiles[i].id;
-                                for (int a = 0; a < level.tiles.Length; a++)
+                                uint targetID = cur_level.tiles[i].id;
+                                for (int a = 0; a < cur_level.tiles.Length; a++)
                                 {
-                                    if (level.tiles[a].id == targetID)
+                                    if (cur_level.tiles[a].id == targetID)
                                     {
-                                        level.tiles[a] = t;
+                                        cur_level.tiles[a] = t;
                                     }
                                 }
                             }
                             else
                             {
-                                level.tiles[i] = t;
+                                cur_level.tiles[i] = t;
                             }
                             break;
                         case "collision":
@@ -940,7 +1098,7 @@ namespace BarbarianLab
                             {
                                 t.col = 1;
                             }
-                            level.tiles[i] = t;
+                            cur_level.tiles[i] = t;
                             break;
                         case "elevation":
                             decimal elevateHeight = 0;
@@ -950,7 +1108,7 @@ namespace BarbarianLab
                                 if (decimal.TryParse(t_Height.Text, out elevateHeight))
                                 {
                                     t.h = elevateHeight;
-                                    level.tiles[i] = t;
+                                    cur_level.tiles[i] = t;
                                 }
                             }
                             else
@@ -968,7 +1126,7 @@ namespace BarbarianLab
                                     {
                                         t.h += elevateIncrement;
                                     }
-                                    level.tiles[i] = t;
+                                    cur_level.tiles[i] = t;
                                 }
                             }
                             UpdateLevelHeights();
@@ -1065,109 +1223,63 @@ namespace BarbarianLab
                     return Color.FromArgb(255, v, p, q);
             }
         }
-
-        private void saveScreenshotToolStripMenuItem_Click(object sender, EventArgs e)
+        private void levelSelectionBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (recentShot == null) return;
-            SaveFileDialog save = new SaveFileDialog();
-            save.Filter = "Image File|*.png";
-            save.DefaultExt = ".png";
-            save.FileName = "level0.png";
-            save.Title = "Save Screenshot";
-            if (save.ShowDialog() == DialogResult.OK)
+            if (loading || levelSelectionBox.SelectedIndex < 0 || allLevels.Count <= 0) return;
+            loading = true;
+            try
             {
-                string filePath = save.FileName;
-                banCursor = true;
-                UpdateLevelImage(sender, e);
-                recentShot.MakeTransparent(Color.Black);
-                Bitmap bmp;
-                Graphics g = Graphics.FromImage(bmp = new Bitmap(recentShot.Width * 10, recentShot.Height * 10));
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                g.PixelOffsetMode = PixelOffsetMode.Half;
-                g.DrawImage(recentShot, 0, 0, recentShot.Width * 10, recentShot.Height * 10);
-                g.Dispose();
-                bmp.Save(filePath, ImageFormat.Png);
-                UpdateLevelImage(sender, e);
-                banCursor = false;
+                cur_level = allLevels[levelSelectionBox.SelectedIndex];
+                LoadLevelData();
             }
+            catch { }
+            loading = false;
         }
 
-        private void roundTileHeightsToThousandthsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void removeLevel_Click(object sender, EventArgs e)
         {
-            for (int i = 0; i < level.tiles.Length; i++)
+            if (allLevels.Count <= 0) return;
+            if (ModifierKeys == Keys.Control)
             {
-                BoB_Tile t = level.tiles[i];
-                t.h = Math.Round(t.h, 3);
-                level.tiles[i] = t;
+                RemoveLevel();
+            }
+            else if (MessageBox.Show("Are you sure?", "Delete Level", MessageBoxButtons.YesNo) == DialogResult.Yes)
+            {
+                RemoveLevel();
             }
         }
-        private void setAllTileCollisionsToDefaultsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void AutosaveLevel()
         {
-            for (int i = 0; i < level.tiles.Length; i++)
+            if (levelSelectionBox.SelectedIndex < 0 || levelSelectionBox.SelectedIndex >= allLevels.Count) return;
+            allLevels[levelSelectionBox.SelectedIndex] = cur_level;
+            int prevIndex = levelSelectionBox.SelectedIndex;
+            loading = true;
+            RefreshLevelList();
+            levelSelectionBox.SelectedIndex = prevIndex;
+            loading = false;
+        }
+        private void RemoveLevel()
+        {
+            allLevels.RemoveAt(levelSelectionBox.SelectedIndex);
+            int prevIndex = levelSelectionBox.SelectedIndex;
+            loading = true;
+            RefreshLevelList();
+            loading = false;
+            levelSelectionBox.SelectedIndex = prevIndex - 1;
+            if (levelSelectionBox.SelectedIndex == -1)
             {
-                BoB_Tile t = level.tiles[i];
-                if (t.id > 0 && t.id < tileCollision.Length)
+                if (levelSelectionBox.Items.Count > 1)
                 {
-                    t.col = 0;
-                    if (tileCollision[t.id])
-                    {
-                        t.col = 1;
-                    }
-                    level.tiles[i] = t;
+                    levelSelectionBox.SelectedIndex = 0;
                 }
-            }
-            UpdateLevelImage(sender, e);
-        }
-
-        private void heightMultiplyToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            decimal multiplier;
-            if (!level.parse_succeeded) return;
-            if (decimal.TryParse(heightMultiplierBox.Text, out multiplier))
-            {
-                for (int i = 0; i < level.tiles.Length; i++)
+                else
                 {
-                    BoB_Tile t = level.tiles[i];
-                    t.h *= multiplier;
-                    level.tiles[i] = t;
+                    levelSelectionBox.Text = "";
+                    cur_level.parse_succeeded = false;
+                    LevelMap.BackgroundImage = null;
                 }
-                UpdateLevelHeights();
-            }
-            else
-            {
-                MessageBox.Show("Height multiplier was invalid...");
-            }
-            UpdateLevelImage(sender, e);
-        }
 
-        private void newLevelToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            level = new Level();
-            level.parse_succeeded = true;
-            level.minX = 0;
-            level.maxX = 5;
-            level.minY = 0;
-            level.maxY = 5;
-            level.players = new BoB_Position[4];
-            level.players[0] = new BoB_Position() { x = 0, y = 0 };
-            level.players[1] = new BoB_Position() { x = 4, y = 4 };
-            level.players[2] = new BoB_Position() { x = 0, y = 4 };
-            level.players[3] = new BoB_Position() { x = 4, y = 0 };
-            level.enemy_type = 7;
-            level.enemies = new BoB_Position[1];
-            level.enemies[0] = new BoB_Position() { x = 2, y = 2 };
-            level.tiles = new BoB_Tile[25];
-            for (int i = 0; i < level.tiles.Length; i++)
-            {
-                BoB_Tile t = new BoB_Tile()
-                {
-                    id = 2,
-                    h = 0,
-                    col = 0
-                };
-                level.tiles[i] = t;
             }
-            LoadLevelData();
         }
     }
 }

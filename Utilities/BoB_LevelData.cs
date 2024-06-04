@@ -8,58 +8,6 @@ using System.Threading.Tasks;
 
 public class BoB_LevelData
 {
-    public static string[] GetLevelArray(Level l)
-    {
-        List<string> substrings = new List<string>();
-        substrings.Add(l.minX.ToString());
-        substrings.Add(l.minY.ToString());
-        substrings.Add(l.maxX.ToString());
-        substrings.Add(l.maxY.ToString());
-        substrings.Add(l.players[0].x.ToString());
-        substrings.Add(l.players[0].y.ToString());
-        substrings.Add(l.players[1].x.ToString());
-        substrings.Add(l.players[1].y.ToString());
-        substrings.Add(l.players[2].x.ToString());
-        substrings.Add(l.players[2].y.ToString());
-        substrings.Add(l.players[3].x.ToString());
-        substrings.Add(l.players[3].y.ToString());
-        substrings.Add(l.enemy_type.ToString());
-        substrings.Add(l.enemies.Length.ToString());
-        for (int i = 0; i < l.enemies.Length; i++)
-        {
-            substrings.Add(l.enemies[i].x.ToString());
-            substrings.Add(l.enemies[i].y.ToString());
-        }
-        for (int i = 0; i < l.tiles.Length; i++)
-        {
-            substrings.Add(l.tiles[i].id.ToString());
-            substrings.Add(l.tiles[i].h.ToString());
-            substrings.Add(l.tiles[i].col.ToString());
-        }
-        substrings.Add("0");
-
-        //output += $"{l.minX},{l.minY},{l.maxX},{l.maxY},";
-        //output += $"{l.players[0].x},{l.players[0].y},";
-        //output += $"{l.players[1].x},{l.players[1].y},";
-        //output += $"{l.players[2].x},{l.players[2].y},";
-        //output += $"{l.players[3].x},{l.players[3].y},";
-        //output += $"{l.enemy_type},";
-        //output += $"{l.enemies.Length},";
-        //for (int i = 0; i < l.enemies.Length; i++)
-        //{
-        //    output += $"{l.enemies[i].x},{l.enemies[i].y},";
-        //    Debug.WriteLine("Writing enemy data: " + i);
-        //}
-        //int width = l.maxX - l.minX;
-        //int height = l.maxY - l.minY;
-        //for (int i = 0; i < (width * height); i++)
-        //{
-        //    output += $"{l.tiles[i].id},{l.tiles[i].h},{l.tiles[i].col},";
-        //    Debug.WriteLine("Writing tile data: " + i);
-        //}
-        //output += "0";
-        return substrings.ToArray();
-    }
     public struct Level
     {
         public bool parse_succeeded;
@@ -71,22 +19,78 @@ public class BoB_LevelData
         public int enemy_type;
         public BoB_Position[] enemies;
         public BoB_Tile[] tiles;
+
+        public static Level[] ParseLevels(string input, bool deleteFirstDefault)
+        {
+            List<Level> levels = new List<Level>();
+            string arraySearch = "new Array";
+            string concatSearch = "f_ConcatArray";
+            string concatenatedData = "";
+            if (input.Contains(arraySearch))
+            {
+                string[] arraySubstrings = input.Split(arraySearch, StringSplitOptions.TrimEntries);
+                for (int i = 1; i < arraySubstrings.Length; i++)
+                {
+                    int startIndex = arraySubstrings[i].IndexOf("(") + 1;
+                    int endIndex = arraySubstrings[i].IndexOf(")");
+                    if (startIndex == -1 || endIndex == -1)
+                    {
+                        MessageBox.Show($"Detected Array[{i}]  did not contain parenthesis. Continuing...");
+                        continue;
+                    }
+                    string rawData = arraySubstrings[i].Substring(startIndex, endIndex - startIndex);
+                    if (arraySubstrings[i].Contains(concatSearch))
+                    {
+                        // This level is concatenated, don't add to the level array and just add its data to the next one
+                        concatenatedData += rawData + ",";
+                        Debug.WriteLine($"Detected Array[{i}] is concatenated data, continuing...");
+                    }
+                    else
+                    {
+                        string finalString = concatenatedData + rawData;
+                        concatenatedData = "";
+                        levels.Add(ParseLevel(finalString));
+                        Debug.WriteLine($"Added New Level from Detected Array[{i}]...");
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Text did not contain any level arrays...");
+                return new Level[0];
+            }
+            for (int i = 0; i < levels.Count; i++)
+            {
+                // Trim out all invalid levels
+                if (!levels[i].parse_succeeded)
+                {
+                    Debug.WriteLine($"Removing Level [{i}], it's parsing wasn't successful");
+                    levels.RemoveAt(i);
+                    i--;
+                }
+                else if (i == 0 && deleteFirstDefault)
+                {
+                    string[] default_substrings = DefaultLevelString().Split(",", StringSplitOptions.TrimEntries);
+                    string[] current_substrings = LevelSubstrings(levels[i]);
+                    if (default_substrings.Length == current_substrings.Length || !levels[i].parse_succeeded)
+                    {
+                        Debug.WriteLine($"Removing Level [{i}], it's the default, debug level");
+                        levels.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+            return levels.ToArray();
+        }
         public static Level ParseLevel(string input)
         {
+            Debug.WriteLine("Preparing to parse next level: " +  input);
             Level l = new Level();
             l.parse_succeeded = false;
-            int startIndex = input.IndexOf("(") + 1;
-            int endIndex = input.IndexOf(")");
-            if (startIndex == -1 || endIndex == -1)
-            {
-                MessageBox.Show("Input did not contain parenthesis for marking a Level Array...");
-                return l;
-            }
-            input = input.Substring(startIndex, endIndex - startIndex);
             string[] substrings = input.Split(",", StringSplitOptions.TrimEntries);
             if (substrings.Length < 12)
             {
-                MessageBox.Show("Input did not contain enough Level Array Data...");
+                Debug.WriteLine("Input did not contain enough Level Array Data, continuing...");
                 return l;
             }
 
@@ -184,8 +188,8 @@ public class BoB_LevelData
                     try
                     {
                         MessageBox.Show($"Error parsing tile data...{Environment.NewLine}Stopped at substring: [{readIndex}], broken substring: '{substrings[readIndex]}'");
-                    } 
-                    catch 
+                    }
+                    catch
                     {
                         MessageBox.Show("Error parsing tile data...");
                     }
@@ -200,11 +204,90 @@ public class BoB_LevelData
                 int trimCount = tileList.Count - (width * height);
                 Debug.WriteLine($"Trimming off ({trimCount}) additional tiles...");
                 tileList.RemoveRange(width * height, trimCount);
-                //tileList.RemoveAt(tileList.Count - 1);
             }
             l.tiles = tileList.ToArray();
             l.parse_succeeded = true;
             return l;
+        }
+        public static string[] LevelSubstrings(Level l)
+        {
+            List<string> substrings = new List<string>();
+            substrings.Add(l.minX.ToString());
+            substrings.Add(l.minY.ToString());
+            substrings.Add(l.maxX.ToString());
+            substrings.Add(l.maxY.ToString());
+            substrings.Add(l.players[0].x.ToString());
+            substrings.Add(l.players[0].y.ToString());
+            substrings.Add(l.players[1].x.ToString());
+            substrings.Add(l.players[1].y.ToString());
+            substrings.Add(l.players[2].x.ToString());
+            substrings.Add(l.players[2].y.ToString());
+            substrings.Add(l.players[3].x.ToString());
+            substrings.Add(l.players[3].y.ToString());
+            substrings.Add(l.enemy_type.ToString());
+            substrings.Add(l.enemies.Length.ToString());
+            for (int i = 0; i < l.enemies.Length; i++)
+            {
+                substrings.Add(l.enemies[i].x.ToString());
+                substrings.Add(l.enemies[i].y.ToString());
+            }
+            for (int i = 0; i < l.tiles.Length; i++)
+            {
+                substrings.Add(l.tiles[i].id.ToString());
+                substrings.Add(l.tiles[i].h.ToString());
+                substrings.Add(l.tiles[i].col.ToString());
+            }
+            substrings.Add("0");
+            return substrings.ToArray();
+        }
+        public static string ExportedLevelString(Level level, string arrayVar, int index, int concatThresh)
+        {
+            string[] substrings = LevelSubstrings(level);
+            string finalCode = $"{arrayVar}[{index}] = new Array(";
+            int concatGoal = substrings.Length;
+            Debug.WriteLine($"Preparing to write ({substrings.Length}) substrings...");
+            if (concatThresh > 0)
+            {
+                if (substrings.Length > concatThresh)
+                {
+                    concatGoal = substrings.Length / 2;
+                }
+                if (substrings.Length > (2 * concatThresh))
+                {
+                    concatGoal = concatThresh;
+                }
+            }
+            int substringsRead = 0;
+            bool concated = false;
+            for (int i = 0; i < substrings.Length; i++)
+            {
+                finalCode += substrings[i];
+                substringsRead++;
+                if (substringsRead == concatGoal && i < (substrings.Length - 5))
+                {
+                    substringsRead = 0;
+                    if (concated)
+                    {
+                        finalCode += ")";
+                    }
+                    finalCode += $");{Environment.NewLine}   {arrayVar}[{index}] = f_ConcatArray({arrayVar}[{index}],new Array(";
+                    concated = true;
+                }
+                else if (i < substrings.Length - 1)
+                {
+                    finalCode += ",";
+                }
+            }
+            if (concated)
+            {
+                finalCode += ")";
+            }
+            finalCode += ");";
+            return finalCode;
+        }
+        public static string DefaultLevelString()
+        {
+            return "0,0,5,5,0,0,4,4,0,4,4,0,7,1,2,2,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,2,0,0,0";
         }
     }
     public struct BoB_Position

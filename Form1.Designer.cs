@@ -57,13 +57,17 @@
             ToolPaint = new Button();
             label16 = new Label();
             t_Sprite = new PictureBox();
+            removeLevel = new Button();
+            label15 = new Label();
+            levelSelectionBox = new ComboBox();
             tipText = new Label();
             LevelMap = new PictureBox();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
-            openLevelToolStripMenuItem = new ToolStripMenuItem();
+            openLevelsToolStripMenuItem = new ToolStripMenuItem();
             newLevelToolStripMenuItem = new ToolStripMenuItem();
-            saveLevelArrayToolStripMenuItem = new ToolStripMenuItem();
+            exportLevelToolStripMenuItem = new ToolStripMenuItem();
+            exportPlaylistToolStripMenuItem = new ToolStripMenuItem();
             saveScreenshotToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
             unselectToolsToolStripMenuItem = new ToolStripMenuItem();
@@ -135,6 +139,7 @@
             // 
             label3.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label3.AutoSize = true;
+            label3.ForeColor = SystemColors.Control;
             label3.Location = new Point(1005, 167);
             label3.Name = "label3";
             label3.Size = new Size(18, 20);
@@ -145,6 +150,7 @@
             // 
             label4.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label4.AutoSize = true;
+            label4.ForeColor = SystemColors.Control;
             label4.Location = new Point(1077, 167);
             label4.Name = "label4";
             label4.Size = new Size(17, 20);
@@ -178,6 +184,7 @@
             // 
             AddEnemy.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             AddEnemy.BackColor = Color.FromArgb(15, 10, 15);
+            AddEnemy.ForeColor = SystemColors.Control;
             AddEnemy.Location = new Point(978, 650);
             AddEnemy.Name = "AddEnemy";
             AddEnemy.Size = new Size(142, 29);
@@ -190,6 +197,7 @@
             // 
             DeleteEnemy.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             DeleteEnemy.BackColor = Color.FromArgb(15, 10, 15);
+            DeleteEnemy.ForeColor = SystemColors.Control;
             DeleteEnemy.Location = new Point(978, 682);
             DeleteEnemy.Name = "DeleteEnemy";
             DeleteEnemy.Size = new Size(142, 29);
@@ -202,6 +210,7 @@
             // 
             label8.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label8.AutoSize = true;
+            label8.ForeColor = SystemColors.Control;
             label8.Location = new Point(875, 654);
             label8.Name = "label8";
             label8.Size = new Size(18, 20);
@@ -212,6 +221,7 @@
             // 
             label9.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             label9.AutoSize = true;
+            label9.ForeColor = SystemColors.Control;
             label9.Location = new Point(876, 687);
             label9.Name = "label9";
             label9.Size = new Size(17, 20);
@@ -222,6 +232,7 @@
             // 
             label10.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label10.AutoSize = true;
+            label10.ForeColor = SystemColors.Control;
             label10.Location = new Point(840, 37);
             label10.Name = "label10";
             label10.Size = new Size(87, 20);
@@ -232,6 +243,7 @@
             // 
             label11.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label11.AutoSize = true;
+            label11.ForeColor = SystemColors.Control;
             label11.Location = new Point(840, 70);
             label11.Name = "label11";
             label11.Size = new Size(88, 20);
@@ -254,6 +266,7 @@
             // 
             label14.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label14.AutoSize = true;
+            label14.ForeColor = SystemColors.Control;
             label14.Location = new Point(840, 330);
             label14.Name = "label14";
             label14.Size = new Size(53, 20);
@@ -286,6 +299,9 @@
             // 
             // splitContainer1.Panel2
             // 
+            splitContainer1.Panel2.Controls.Add(removeLevel);
+            splitContainer1.Panel2.Controls.Add(label15);
+            splitContainer1.Panel2.Controls.Add(levelSelectionBox);
             splitContainer1.Panel2.Controls.Add(tipText);
             splitContainer1.Panel2.Controls.Add(LevelMap);
             splitContainer1.Panel2MinSize = 275;
@@ -309,6 +325,7 @@
             // label1
             // 
             label1.AutoSize = true;
+            label1.ForeColor = SystemColors.Control;
             label1.Location = new Point(8, 109);
             label1.Name = "label1";
             label1.Size = new Size(124, 20);
@@ -342,6 +359,7 @@
             // label17
             // 
             label17.AutoSize = true;
+            label17.ForeColor = SystemColors.Control;
             label17.Location = new Point(8, 10);
             label17.Name = "label17";
             label17.Size = new Size(82, 20);
@@ -363,6 +381,7 @@
             // 
             label18.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             label18.AutoSize = true;
+            label18.ForeColor = SystemColors.Control;
             label18.Location = new Point(6, 618);
             label18.Name = "label18";
             label18.Size = new Size(54, 20);
@@ -373,6 +392,7 @@
             // 
             t_Collision.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             t_Collision.AutoSize = true;
+            t_Collision.ForeColor = SystemColors.Control;
             t_Collision.Location = new Point(66, 647);
             t_Collision.Name = "t_Collision";
             t_Collision.Size = new Size(117, 24);
@@ -437,6 +457,7 @@
             // 
             label16.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             label16.AutoSize = true;
+            label16.ForeColor = SystemColors.Control;
             label16.Location = new Point(8, 583);
             label16.Name = "label16";
             label16.Size = new Size(52, 20);
@@ -454,9 +475,46 @@
             t_Sprite.TabIndex = 0;
             t_Sprite.TabStop = false;
             // 
+            // removeLevel
+            // 
+            removeLevel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            removeLevel.BackColor = Color.FromArgb(15, 10, 15);
+            removeLevel.ForeColor = SystemColors.Control;
+            removeLevel.Location = new Point(399, 3);
+            removeLevel.Name = "removeLevel";
+            removeLevel.Size = new Size(142, 29);
+            removeLevel.TabIndex = 65;
+            removeLevel.Text = "Remove Level";
+            removeLevel.UseVisualStyleBackColor = false;
+            removeLevel.Click += removeLevel_Click;
+            // 
+            // label15
+            // 
+            label15.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            label15.AutoSize = true;
+            label15.ForeColor = SystemColors.Control;
+            label15.Location = new Point(35, 7);
+            label15.Name = "label15";
+            label15.Size = new Size(97, 20);
+            label15.TabIndex = 65;
+            label15.Text = "Loaded Level";
+            // 
+            // levelSelectionBox
+            // 
+            levelSelectionBox.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            levelSelectionBox.BackColor = Color.FromArgb(200, 180, 200);
+            levelSelectionBox.Font = new Font("Segoe UI", 8.5F, FontStyle.Regular, GraphicsUnit.Point);
+            levelSelectionBox.FormattingEnabled = true;
+            levelSelectionBox.Location = new Point(138, 4);
+            levelSelectionBox.Name = "levelSelectionBox";
+            levelSelectionBox.Size = new Size(255, 27);
+            levelSelectionBox.TabIndex = 65;
+            levelSelectionBox.SelectedIndexChanged += levelSelectionBox_SelectedIndexChanged;
+            // 
             // tipText
             // 
             tipText.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tipText.ForeColor = SystemColors.Control;
             tipText.Location = new Point(3, 631);
             tipText.Name = "tipText";
             tipText.Size = new Size(538, 49);
@@ -468,9 +526,9 @@
             LevelMap.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             LevelMap.BackColor = Color.Black;
             LevelMap.BackgroundImageLayout = ImageLayout.Zoom;
-            LevelMap.Location = new Point(3, 3);
+            LevelMap.Location = new Point(3, 36);
             LevelMap.Name = "LevelMap";
-            LevelMap.Size = new Size(538, 625);
+            LevelMap.Size = new Size(538, 592);
             LevelMap.TabIndex = 0;
             LevelMap.TabStop = false;
             LevelMap.MouseDown += LevelMap_MouseDown;
@@ -491,40 +549,48 @@
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openLevelToolStripMenuItem, newLevelToolStripMenuItem, saveLevelArrayToolStripMenuItem, saveScreenshotToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { openLevelsToolStripMenuItem, newLevelToolStripMenuItem, exportLevelToolStripMenuItem, exportPlaylistToolStripMenuItem, saveScreenshotToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(46, 24);
             fileToolStripMenuItem.Text = "File";
             // 
-            // openLevelToolStripMenuItem
+            // openLevelsToolStripMenuItem
             // 
-            openLevelToolStripMenuItem.Name = "openLevelToolStripMenuItem";
-            openLevelToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.O;
-            openLevelToolStripMenuItem.Size = new Size(250, 26);
-            openLevelToolStripMenuItem.Text = "Open Level";
-            openLevelToolStripMenuItem.Click += openLevelToolStripMenuItem_Click;
+            openLevelsToolStripMenuItem.Name = "openLevelsToolStripMenuItem";
+            openLevelsToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.O;
+            openLevelsToolStripMenuItem.Size = new Size(274, 26);
+            openLevelsToolStripMenuItem.Text = "Open Level(s)";
+            openLevelsToolStripMenuItem.Click += openLevelsToolStripMenuItem_Click;
             // 
             // newLevelToolStripMenuItem
             // 
             newLevelToolStripMenuItem.Name = "newLevelToolStripMenuItem";
             newLevelToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
-            newLevelToolStripMenuItem.Size = new Size(250, 26);
+            newLevelToolStripMenuItem.Size = new Size(274, 26);
             newLevelToolStripMenuItem.Text = "New Level";
             newLevelToolStripMenuItem.Click += newLevelToolStripMenuItem_Click;
             // 
-            // saveLevelArrayToolStripMenuItem
+            // exportLevelToolStripMenuItem
             // 
-            saveLevelArrayToolStripMenuItem.Name = "saveLevelArrayToolStripMenuItem";
-            saveLevelArrayToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.S;
-            saveLevelArrayToolStripMenuItem.Size = new Size(250, 26);
-            saveLevelArrayToolStripMenuItem.Text = "Save Level Array";
-            saveLevelArrayToolStripMenuItem.Click += copyLevelArrayToolStripMenuItem_Click;
+            exportLevelToolStripMenuItem.Name = "exportLevelToolStripMenuItem";
+            exportLevelToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.F;
+            exportLevelToolStripMenuItem.Size = new Size(274, 26);
+            exportLevelToolStripMenuItem.Text = "Export Level";
+            exportLevelToolStripMenuItem.Click += exportLevelToolStripMenuItem_Click;
+            // 
+            // exportPlaylistToolStripMenuItem
+            // 
+            exportPlaylistToolStripMenuItem.Name = "exportPlaylistToolStripMenuItem";
+            exportPlaylistToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Shift | Keys.F;
+            exportPlaylistToolStripMenuItem.Size = new Size(274, 26);
+            exportPlaylistToolStripMenuItem.Text = "Export Playlist";
+            exportPlaylistToolStripMenuItem.Click += exportPlaylistToolStripMenuItem_Click;
             // 
             // saveScreenshotToolStripMenuItem
             // 
             saveScreenshotToolStripMenuItem.Name = "saveScreenshotToolStripMenuItem";
             saveScreenshotToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.P;
-            saveScreenshotToolStripMenuItem.Size = new Size(250, 26);
+            saveScreenshotToolStripMenuItem.Size = new Size(274, 26);
             saveScreenshotToolStripMenuItem.Text = "Save Screenshot";
             saveScreenshotToolStripMenuItem.Click += saveScreenshotToolStripMenuItem_Click;
             // 
@@ -676,6 +742,7 @@
             // 
             label12.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label12.AutoSize = true;
+            label12.ForeColor = SystemColors.Control;
             label12.Location = new Point(840, 137);
             label12.Name = "label12";
             label12.Size = new Size(124, 20);
@@ -686,6 +753,7 @@
             // 
             label13.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label13.AutoSize = true;
+            label13.ForeColor = SystemColors.Control;
             label13.Location = new Point(840, 103);
             label13.Name = "label13";
             label13.Size = new Size(125, 20);
@@ -772,10 +840,11 @@
             e_Type.BackColor = Color.FromArgb(200, 180, 200);
             e_Type.Location = new Point(904, 328);
             e_Type.Maximum = new decimal(new int[] { 999, 0, 0, 0 });
-            e_Type.Minimum = new decimal(new int[] { 999, 0, 0, int.MinValue });
+            e_Type.Minimum = new decimal(new int[] { 2, 0, 0, 0 });
             e_Type.Name = "e_Type";
             e_Type.Size = new Size(68, 27);
             e_Type.TabIndex = 51;
+            e_Type.Value = new decimal(new int[] { 2, 0, 0, 0 });
             e_Type.ValueChanged += e_Type_ValueChanged;
             // 
             // p1x
@@ -878,6 +947,7 @@
             // 
             label2.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label2.AutoSize = true;
+            label2.ForeColor = SystemColors.Control;
             label2.Location = new Point(840, 192);
             label2.Name = "label2";
             label2.Size = new Size(117, 20);
@@ -888,6 +958,7 @@
             // 
             label6.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label6.AutoSize = true;
+            label6.ForeColor = SystemColors.Control;
             label6.Location = new Point(840, 225);
             label6.Name = "label6";
             label6.Size = new Size(117, 20);
@@ -898,6 +969,7 @@
             // 
             label7.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label7.AutoSize = true;
+            label7.ForeColor = SystemColors.Control;
             label7.Location = new Point(840, 258);
             label7.Name = "label7";
             label7.Size = new Size(117, 20);
@@ -908,6 +980,7 @@
             // 
             label19.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label19.AutoSize = true;
+            label19.ForeColor = SystemColors.Control;
             label19.Location = new Point(840, 291);
             label19.Name = "label19";
             label19.Size = new Size(117, 20);
@@ -955,7 +1028,7 @@
             Controls.Add(label4);
             Controls.Add(label3);
             Controls.Add(menuStrip1);
-            ForeColor = SystemColors.Control;
+            ForeColor = SystemColors.ControlText;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             MinimumSize = new Size(1150, 770);
@@ -965,6 +1038,7 @@
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel1.PerformLayout();
             splitContainer1.Panel2.ResumeLayout(false);
+            splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)t_ID).EndInit();
@@ -1016,8 +1090,8 @@
         private CheckBox t_Collision;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
-        private ToolStripMenuItem openLevelToolStripMenuItem;
-        private ToolStripMenuItem saveLevelArrayToolStripMenuItem;
+        private ToolStripMenuItem openLevelsToolStripMenuItem;
+        private ToolStripMenuItem exportLevelToolStripMenuItem;
         private ToolStripMenuItem editToolStripMenuItem;
         private ToolStripMenuItem newLevelToolStripMenuItem;
         private Label label17;
@@ -1069,5 +1143,10 @@
         private ToolStripMenuItem multiplyAllTileHeightsToolStripMenuItem;
         private ToolStripTextBox heightMultiplierBox;
         private ToolStripMenuItem heightMultiplyToolStripMenuItem;
+        private Label label15;
+        private ComboBox levelSelectionBox;
+        private ToolStripMenuItem exportPlaylistToolStripMenuItem;
+        private Button removeLevel;
+        private ToolStripMenuItem saveLevelToolStripMenuItem;
     }
 }
