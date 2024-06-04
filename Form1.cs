@@ -227,7 +227,7 @@ namespace BarbarianLab
                 string saveText = $"// Copy the level array below!{Environment.NewLine}" +
                 $"// Make sure both the _loc_ number and index{Environment.NewLine}" +
                 $"// match the level you're replacing...{Environment.NewLine}{Environment.NewLine}" +
-                $"{Level.ExportedLevelString(cur_level, "_loc3_", 0, concatThreshold)}";
+                $"{Level.ExportedLevelString(cur_level, "_loc3_", 0, concatThreshold)}{Environment.NewLine}";
                 SaveLevel save = new SaveLevel(saveText);
                 save.ShowDialog();
             }
