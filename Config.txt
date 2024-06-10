@@ -15,7 +15,7 @@ Level Init Substring Limit = 6000 // How many subvalues a group of arrays have t
 ⩶ Themes
 Classic = BG (50, 35, 50) | Level BG (30, 20, 30) | UI (200, 180, 200) | Buttons (15, 10, 15) | BG Text (White) | UI Text (Black) | Button Text (White) | Tool (200, 180, 200) | Tool Pressed (255, 255, 192) | Highlight (Yellow)
 Light Classic = BG (205, 200, 205) | Level BG (120, 115, 120) | UI (White) | Buttons (255, 240, 255) | BG Text (Black) | UI Text (Black) | Button Text (Black) | Tool (White) | Tool Pressed (255, 255, 192) | Highlight (Yellow)
-Hyperblack = BG (35, 35, 35) | Level BG (20, 20, 20) | UI (Black) | Buttons (Black) | BG Text (White) | UI Text (White) | Button Text (White) | Tool (White) | Tool Pressed (Gray) | Highlight (White)
+Hyperblack = BG (35, 35, 35) | Level BG (20, 20, 20) | UI (Black) | Buttons (Black) | BG Text (White) | UI Text (White) | Button Text (White) | Tool (White) | Tool Pressed (Gray) | Highlight (Yellow)
 Snow World = BG (140, 180, 190) | Level BG (45, 60, 65) | UI (180, 220, 230) | Buttons (180, 220, 230) | BG Text (Black) | UI Text (Black) | Button Text (Black) | Tool (180, 220, 230) | Tool Pressed (White) | Highlight (Yellow)
 Volcano Town = BG (30, 30, 35) | Level BG (15, 15, 18) | UI (255, 158, 81) | Buttons (255, 158, 81) | BG Text (255, 158, 81) | UI Text (Black) | Button Text (Black) | Tool (255, 158, 81) | Tool Pressed (White) | Highlight (Yellow)
 Cartography = BG (152, 152, 102) | Level BG (82, 66, 40) | UI (82, 66, 40) | Buttons (82, 66, 40) | BG Text (65, 40, 0) | UI Text (White) | Button Text (White) | Tool (176, 176, 140) | Tool Pressed (White) | Highlight (Yellow)
