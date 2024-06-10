@@ -4,10 +4,7 @@
     <Compile Update="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="OpenLevel.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="SaveLevel.cs">
+    <Compile Update="TextWindow.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

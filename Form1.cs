@@ -1,12 +1,8 @@
+using BarbarianLab.Utilities;
+using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Net.Http.Headers;
-using System.Runtime.Intrinsics.X86;
-using System.Text;
-using System.Xml;
-using BarbarianLab.Utilities;
 using static BoB_LevelData;
 
 namespace BarbarianLab
@@ -15,10 +11,20 @@ namespace BarbarianLab
     {
         Level cur_level = new Level();
         List<Level> allLevels = new List<Level>();
+        List<Theme> windowThemes = new List<Theme>();
+        List<Level> levelHistory = new List<Level>();
         Bitmap? recentShot;
         Config config = new Config();
+        Color[] playerColors = new Color[4]
+        {
+            Color.FromArgb(0, 255, 0),
+            Color.FromArgb(255, 0, 0),
+            Color.FromArgb(0, 255, 255),
+            Color.FromArgb(255, 180, 0)
+        };
+        Color enemyColor = Color.FromArgb(200, 50, 115);
         Dictionary<int, string> characterNames = new Dictionary<int, string>();
-        Dictionary<int, BoB_Tile> affectedTiles = new Dictionary<int, BoB_Tile>();
+        Dictionary<int, string> affectedTileStrings = new Dictionary<int, string>();
         Color[] tileColors = new Color[0];
         Image[] tileSprites = new Image[0];
         bool[] tileCollision = new bool[0];
@@ -26,6 +32,15 @@ namespace BarbarianLab
         bool loading = false;
         public int tileX = -1;
         public int tileY = -1;
+        public int selectingX = -1;
+        public int selectingY = -1;
+        public int floatingSelectionX = -1;
+        public int floatingSelectionY = -1;
+        public int floatingSelectionW = -1;
+        public int floatingSelectionD = -1;
+        BoB_Tile[]? floatingSelection;
+        int? draggingSelectionOffsetX;
+        int? draggingSelectionOffsetY;
         public decimal lowestHeight;
         public decimal highestHeight;
         string toolType = "";
@@ -35,7 +50,6 @@ namespace BarbarianLab
         int maxEnemyCount = 8;
         int concatThreshold = 999;
         int levelThreshold = 6000;
-
         public Form1()
         {
             InitializeComponent();
@@ -45,41 +59,114 @@ namespace BarbarianLab
             config.ParseConfig(AppDomain.CurrentDomain.BaseDirectory + "\\Config.txt");
             if (config.sections.ContainsKey("Miscellaneous"))
             {
-                if (config.sections["Miscellaneous"].settings.ContainsKey("Max Level Width"))
+                int newMaxX;
+                if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Width"].data[0], out newMaxX))
                 {
-                    int newMaxX;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Width"].data[0], out newMaxX))
+                    if (newMaxX < 1)
                     {
-                        if (newMaxX < 1)
+                        newMaxX = 1;
+                    }
+                    levelWidth.Maximum = newMaxX;
+                }
+                int newMaxY;
+                if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Depth"].data[0], out newMaxY))
+                {
+                    if (newMaxY < 1)
+                    {
+                        newMaxY = 1;
+                    }
+                    levelDepth.Maximum = newMaxY;
+                }
+                int enemyMax;
+                if (int.TryParse(config.sections["Miscellaneous"].settings["Max Enemy Count"].data[0], out enemyMax))
+                {
+                    maxEnemyCount = enemyMax;
+                }
+                int concatThresh;
+                if (int.TryParse(config.sections["Miscellaneous"].settings["Array Concat Substring Limit"].data[0], out concatThresh))
+                {
+                    concatThreshold = concatThresh;
+                }
+                int levelThresh;
+                if (int.TryParse(config.sections["Miscellaneous"].settings["Level Init Substring Limit"].data[0], out levelThresh))
+                {
+                    levelThreshold = levelThresh;
+                }
+                int pIndex = 1;
+                List<Color> playerColorList = new List<Color>();
+                while (config.sections["Miscellaneous"].settings.ContainsKey($"Player {pIndex} Color"))
+                {
+                    try
+                    {
+                        int r = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[0]);
+                        int g = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[1]);
+                        int b = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[2]);
+                        playerColorList.Add(Color.FromArgb(r, g, b));
+                    }
+                    catch { }
+                    pIndex++;
+                }
+                if (playerColorList.Count > 0) playerColors = playerColorList.ToArray();
+                if (config.sections["Miscellaneous"].settings.ContainsKey("Enemy Color"))
+                {
+                    try
+                    {
+                        int r = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[0]);
+                        int g = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[1]);
+                        int b = int.Parse(config.sections["Miscellaneous"].settings[$"Player {pIndex} Color"].data[2]);
+                        enemyColor = Color.FromArgb(r, g, b);
+                    }
+                    catch { }
+                }
+            }
+            if (config.sections.ContainsKey("Themes"))
+            {
+                foreach (string name in config.sections["Themes"].settings.Keys)
+                {
+                    string[] data = config.sections["Themes"].settings[name].data;
+                    Theme newTheme = new Theme();
+                    for (int i = 0; i < data.Length; i++)
+                    {
+                        string colorType = data[i].Substring(0, data[i].IndexOf("(") - 1).Trim().ToUpper().Replace(" ", "_");
+                        string colorData = data[i].Substring(data[i].IndexOf("(") + 1);
+                        colorData = colorData.Substring(0, colorData.Length - 1);
+                        Color newCol = ColorFromStringOrRGB(colorData);
+                        switch (colorType)
                         {
-                            newMaxX = 1;
+                            case "BG":
+                                newTheme.bg = newCol;
+                                break;
+                            case "LEVEL_BG":
+                                newTheme.level_bg = newCol;
+                                break;
+                            case "UI":
+                                newTheme.ui = newCol;
+                                break;
+                            case "BUTTONS":
+                                newTheme.btn = newCol;
+                                break;
+                            case "BG_TEXT":
+                                newTheme.bg_text = newCol;
+                                break;
+                            case "UI_TEXT":
+                                newTheme.ui_text = newCol;
+                                break;
+                            case "BUTTON_TEXT":
+                                newTheme.btn_text = newCol;
+                                break;
+                            case "TOOL":
+                                newTheme.tool = newCol;
+                                break;
+                            case "TOOL_PRESSED":
+                                newTheme.tool_pressed = newCol;
+                                break;
+                            case "HIGHLIGHT":
+                                newTheme.highlight = newCol;
+                                break;
                         }
-                        levelWidth.Maximum = newMaxX;
                     }
-                    int newMaxY;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Level Depth"].data[0], out newMaxY))
-                    {
-                        if (newMaxY < 1)
-                        {
-                            newMaxY = 1;
-                        }
-                        levelDepth.Maximum = newMaxY;
-                    }
-                    int enemyMax;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Max Enemy Count"].data[0], out enemyMax))
-                    {
-                        maxEnemyCount = enemyMax;
-                    }
-                    int concatThresh;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Array Concat Substring Limit"].data[0], out concatThresh))
-                    {
-                        concatThreshold = concatThresh;
-                    }
-                    int levelThresh;
-                    if (int.TryParse(config.sections["Miscellaneous"].settings["Level Init Substring Limit"].data[0], out levelThresh))
-                    {
-                        levelThreshold = levelThresh;
-                    }
+                    windowThemes.Add(newTheme);
+                    ThemeSelectionBox.Items.Add($"Theme: {name}");
                 }
             }
             if (config.sections.ContainsKey("Characters"))
@@ -131,7 +218,100 @@ namespace BarbarianLab
                     catch { }
                 }
             }
+
+            // Post-Config-Parsing loading
             t_ID.Value = 2;
+            if (ThemeSelectionBox.Items.Count > 0)
+            {
+                ThemeSelectionBox.SelectedIndex = 0;
+            }
+        }
+        private void UpdateTheme(Theme t)
+        {
+            BackColor = t.bg;
+            splitContainer1.BackColor = t.bg;
+            LevelMap.BackColor = t.level_bg;
+            label1.ForeColor = t.bg_text;
+            label2.ForeColor = t.bg_text;
+            label3.ForeColor = t.bg_text;
+            label4.ForeColor = t.bg_text;
+            label5.ForeColor = t.bg_text;
+            label6.ForeColor = t.bg_text;
+            label7.ForeColor = t.bg_text;
+            label8.ForeColor = t.bg_text;
+            label9.ForeColor = t.bg_text;
+            label10.ForeColor = t.bg_text;
+            label11.ForeColor = t.bg_text;
+            label12.ForeColor = t.bg_text;
+            label13.ForeColor = t.bg_text;
+            label14.ForeColor = t.bg_text;
+            label15.ForeColor = t.bg_text;
+            label16.ForeColor = t.bg_text;
+            label17.ForeColor = t.bg_text;
+            label18.ForeColor = t.bg_text;
+            label19.ForeColor = t.bg_text;
+            tipText.ForeColor = t.bg_text;
+            t_Collision.ForeColor = t.bg_text;
+
+            ToolPaint.BackColor = t.tool;
+            ToolErase.BackColor = t.tool;
+            ToolSelect.BackColor = t.tool;
+            ToolCollision.BackColor = t.tool;
+            ToolElevate.BackColor = t.tool;
+
+            elev_increment.BackColor = t.ui;
+            elev_increment.ForeColor = t.ui_text;
+            t_Sprite.BackColor = t.ui;
+            t_ID.BackColor = t.ui;
+            t_ID.ForeColor = t.ui_text;
+            t_Name.BackColor = t.ui;
+            t_Name.ForeColor = t.ui_text;
+            t_Height.BackColor = t.ui;
+            t_Height.ForeColor = t.ui_text;
+
+            levelSelectionBox.BackColor = t.ui;
+            levelSelectionBox.ForeColor = t.ui_text;
+            levelWidth.BackColor = t.ui;
+            levelWidth.ForeColor = t.ui_text;
+            levelDepth.BackColor = t.ui;
+            levelDepth.ForeColor = t.ui_text;
+            levelMinX.BackColor = t.ui;
+            levelMinX.ForeColor = t.ui_text;
+            levelMinY.BackColor = t.ui;
+            levelMinY.ForeColor = t.ui_text;
+            p1x.BackColor = t.ui;
+            p1x.ForeColor = t.ui_text;
+            p1y.BackColor = t.ui;
+            p1y.ForeColor = t.ui_text;
+            p2x.BackColor = t.ui;
+            p2x.ForeColor = t.ui_text;
+            p2y.BackColor = t.ui;
+            p2y.ForeColor = t.ui_text;
+            p3x.BackColor = t.ui;
+            p3x.ForeColor = t.ui_text;
+            p3y.BackColor = t.ui;
+            p3y.ForeColor = t.ui_text;
+            p4x.BackColor = t.ui;
+            p4x.ForeColor = t.ui_text;
+            p4y.BackColor = t.ui;
+            p4y.ForeColor = t.ui_text;
+            e_Type.BackColor = t.ui;
+            e_Type.ForeColor = t.ui_text;
+            e_Name.BackColor = t.ui;
+            e_Name.ForeColor = t.ui_text;
+            EnemyList.BackColor = t.ui;
+            EnemyList.ForeColor = t.ui_text;
+            ex.BackColor = t.ui;
+            ex.ForeColor = t.ui_text;
+            ey.BackColor = t.ui;
+            ey.ForeColor = t.ui_text;
+
+            removeLevel.BackColor = t.btn;
+            removeLevel.ForeColor = t.btn_text;
+            AddEnemy.BackColor = t.btn;
+            AddEnemy.ForeColor = t.btn_text;
+            DeleteEnemy.BackColor = t.btn;
+            DeleteEnemy.ForeColor = t.btn_text;
         }
 
         // ==========================================
@@ -139,10 +319,17 @@ namespace BarbarianLab
         // ==========================================
         private void openLevelsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            OpenLevel open = new OpenLevel();
+            Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            string windowText =
+                $"// Copy-Paste any amount of levels below to import them into the tool.{Environment.NewLine}" +
+                $"// You can even put entire f_Levels_InitLevels functions here!{Environment.NewLine}{Environment.NewLine}" +
+                $"// _locX_[Y] = new Array(Big list of numbers);{Environment.NewLine}" +
+                $"// _locX_[Y] = f_ConcatArray(_locX_[Y],new Array(Additional data for larger levels);{Environment.NewLine}";
+
+            TextWindow open = new TextWindow(t, "Open_Level", windowText);
             if (open.ShowDialog() == DialogResult.OK)
             {
-                if (loading) return;
+                if (loading || open.levels == null) return;
                 loading = true;
                 int firstNew = allLevels.Count;
                 allLevels.AddRange(open.levels);
@@ -154,7 +341,7 @@ namespace BarbarianLab
         private void newLevelToolStripMenuItem_Click(object sender, EventArgs e)
         {
             allLevels.Add(Level.ParseLevels($"new Array({Level.DefaultLevelString()});", false)[0]);
-            affectedTiles = new Dictionary<int, BoB_Tile>();
+            affectedTileStrings = new Dictionary<int, string>();
             loading = true;
             RefreshLevelList();
             loading = false;
@@ -224,11 +411,12 @@ namespace BarbarianLab
         {
             try
             {
-                string saveText = $"// Copy the level array below!{Environment.NewLine}" +
+                string windowText = $"// Copy the level array below!{Environment.NewLine}" +
                 $"// Make sure both the _loc_ number and index{Environment.NewLine}" +
                 $"// match the level you're replacing...{Environment.NewLine}{Environment.NewLine}" +
                 $"{Level.ExportedLevelString(cur_level, "_loc3_", 0, concatThreshold)}{Environment.NewLine}";
-                SaveLevel save = new SaveLevel(saveText);
+                Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+                TextWindow save = new TextWindow(t, "Export_Level", windowText);
                 save.ShowDialog();
             }
             catch { }
@@ -256,7 +444,7 @@ namespace BarbarianLab
 
             // Create function f_Levels_InitLevels
             int curLevelIndex = 0;
-            string saveText = $"// Copy the level init functions below!{Environment.NewLine}" +
+            string windowText = $"// Copy the level init functions below!{Environment.NewLine}" +
             $"// If you don't want levels to be shuffled,{Environment.NewLine}" +
             $"// erase the if condition containing f_ShuffleArray{Environment.NewLine}" +
             Environment.NewLine +
@@ -276,18 +464,18 @@ namespace BarbarianLab
             // Write each of the first level group's levels
             for (int i = 0; i < levelGroups[0].Length; i++)
             {
-                saveText += $"   {Level.ExportedLevelString(levelGroups[0][i], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
+                windowText += $"   {Level.ExportedLevelString(levelGroups[0][i], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
                 curLevelIndex++;
             }
 
             // Write calls for each addendum level group function
             for (int i = 1; i < levelGroups.Count; i++)
             {
-                saveText += $"   f_Levels_InitLevels{i + 1}(o_game);" + Environment.NewLine;
+                windowText += $"   f_Levels_InitLevels{i + 1}(o_game);" + Environment.NewLine;
             }
 
             // Write shuffling
-            saveText +=
+            windowText +=
             $"   if(n_debugLevel == undefined){Environment.NewLine}" +
             "   {" + Environment.NewLine +
             $"      f_ShuffleArray(levels,levels.length);{Environment.NewLine}" +
@@ -297,20 +485,20 @@ namespace BarbarianLab
             // Write each addendum function
             for (int i = 1; i < levelGroups.Count; i++)
             {
-                saveText +=
+                windowText +=
                 $"function f_Levels_InitLevels{i + 1}(o_game){Environment.NewLine}" +
                 "{" + Environment.NewLine +
                 $"   var levels = _root.a_levels;{Environment.NewLine}";
                 for (int j = 0; j < levelGroups[i].Length; j++)
                 {
-                    saveText += $"   {Level.ExportedLevelString(levelGroups[i][j], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
+                    windowText += $"   {Level.ExportedLevelString(levelGroups[i][j], "levels", curLevelIndex, concatThreshold)}{Environment.NewLine}";
                     curLevelIndex++;
                 }
-                saveText +=
+                windowText +=
                 "}" + Environment.NewLine;
             }
-
-            SaveLevel save = new SaveLevel(saveText);
+            Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            TextWindow save = new TextWindow(t, "Export_Playlist", windowText);
             save.ShowDialog();
         }
         private void saveScreenshotToolStripMenuItem_Click(object sender, EventArgs e)
@@ -386,7 +574,7 @@ namespace BarbarianLab
             UpdateLevelImage(sender, e);
         }
 
-        private void LoadLevelData()
+        private void LoadLevelData(bool undoing)
         {
             loading = true;
             int newWidth = (cur_level.maxX - cur_level.minX);
@@ -429,45 +617,60 @@ namespace BarbarianLab
             {
                 EnemyList.SelectedIndex = 0;
             }
+            if (!undoing) AddLevelHistory();
         }
         private void SelectTool(uint type)
         {
+            if (floatingSelection != null)
+            {
+                PlaceSelection();
+            }
             toolType = "";
             tipText.Text = "";
-            ToolPaint.BackColor = Color.FromArgb(200, 180, 200);
+            Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            ToolPaint.BackColor = t.tool;
             ToolPaint.Enabled = true;
-            ToolErase.BackColor = Color.FromArgb(200, 180, 200);
+            ToolErase.BackColor = t.tool;
             ToolErase.Enabled = true;
-            ToolCollision.BackColor = Color.FromArgb(200, 180, 200);
+            ToolCollision.BackColor = t.tool;
             ToolCollision.Enabled = true;
-            ToolElevate.BackColor = Color.FromArgb(200, 180, 200);
+            ToolElevate.BackColor = t.tool;
             ToolElevate.Enabled = true;
+            ToolSelect.BackColor = t.tool;
+            ToolSelect.Enabled = true;
             switch (type)
             {
                 case 1:
                     toolType = "paint";
-                    ToolPaint.BackColor = Color.FromArgb(255, 255, 192);
+                    ToolPaint.BackColor = t.tool_pressed;
                     ToolPaint.Enabled = false;
                     tipText.Text = "Left Click: Paint  |  Shift + Left-Click: Paint (ID Only)" + Environment.NewLine +
                     "Ctrl + Left-Click: Replace All of an ID  |  Right-Click: Tile Eyedropper Tool";
                     break;
                 case 2:
                     toolType = "erase";
-                    ToolErase.BackColor = Color.FromArgb(255, 255, 192);
+                    ToolErase.BackColor = t.tool_pressed;
                     ToolErase.Enabled = false;
                     tipText.Text = "Left Click: Erase  |  Ctrl + Left-Click: Erase All of an ID" + Environment.NewLine +
                     "Right-Click: Tile Eyedropper Tool";
                     break;
                 case 3:
+                    toolType = "select";
+                    ToolSelect.BackColor = t.tool_pressed;
+                    ToolSelect.Enabled = false;
+                    tipText.Text = "Left Click: Select/Move Selection  |  Ctrl + Delete: Delete Tile Selection" + Environment.NewLine +
+                    "Ctrl + C / X / V: Copy/Cut/Paste Tile Selection";
+                    break;
+                case 4:
                     toolType = "collision";
-                    ToolCollision.BackColor = Color.FromArgb(255, 255, 192);
+                    ToolCollision.BackColor = t.tool_pressed;
                     ToolCollision.Enabled = false;
                     tipText.Text = "Left Click: Edit Collision  |  Right-Click: Tile Eyedropper Tool" + Environment.NewLine +
                     "Darker gray tiles have tile IDs where default collision takes priority.";
                     break;
-                case 4:
+                case 5:
                     toolType = "elevation";
-                    ToolElevate.BackColor = Color.FromArgb(255, 255, 192);
+                    ToolElevate.BackColor = t.tool_pressed;
                     ToolElevate.Enabled = false;
                     tipText.Text = "Left Click: Increment Tile Height  |  Shift + Left-Click: Reverse Increment Height" + Environment.NewLine +
                     "Ctrl + Left-Click: Set Tile Height  |  Right-Click: Tile Eyedropper Tool";
@@ -478,12 +681,14 @@ namespace BarbarianLab
         private void unselectToolsToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(0); }
         private void paintToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(1); }
         private void eraseToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(2); }
-        private void collisionToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(3); }
-        private void elevationToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(4); }
+        private void selectionToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(3); }
+        private void collisionToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(4); }
+        private void elevationToolToolStripMenuItem_Click(object sender, EventArgs e) { SelectTool(5); }
         private void ToolPaint_Click(object sender, EventArgs e) { paintToolToolStripMenuItem_Click(sender, e); }
         private void ToolErase_Click(object sender, EventArgs e) { eraseToolToolStripMenuItem_Click(sender, e); }
         private void ToolCollision_Click(object sender, EventArgs e) { collisionToolToolStripMenuItem_Click(sender, e); }
         private void ToolElevate_Click(object sender, EventArgs e) { elevationToolToolStripMenuItem_Click(sender, e); }
+        private void ToolSelect_Click(object sender, EventArgs e) { selectionToolToolStripMenuItem_Click(sender, e); }
         private void SelectViewType(int type)
         {
             viewType = type;
@@ -527,10 +732,14 @@ namespace BarbarianLab
             loading = true;
             try
             {
+                AddLevelHistory();
                 int width = cur_level.maxX - cur_level.minX;
-                int height = cur_level.maxY - cur_level.minY;
+                int depth = cur_level.maxY - cur_level.minY;
+                int pWidth = width;
+                int pDepth = depth;
                 int widthDifference = (int)levelWidth.Value - width;
-                int depthDifference = (int)levelDepth.Value - height;
+                int depthDifference = (int)levelDepth.Value - depth;
+                affectedTileStrings = new Dictionary<int, string>();
                 List<BoB_Tile> tileList = cur_level.tiles.ToList();
                 BoB_Tile t = new BoB_Tile();
                 t.id = 1;
@@ -542,9 +751,9 @@ namespace BarbarianLab
                 {
                     for (int w = 0; w < widthDifference; w++)
                     {
-                        for (int h = 0; h < height; h++)
+                        for (int d = 0; d < depth; d++)
                         {
-                            tileList.Insert((h * width) + width + h, t);
+                            tileList.Insert((d * width) + width + d, t);
                         }
                         cur_level.maxX++;
                         width = cur_level.maxX - cur_level.minX;
@@ -554,9 +763,12 @@ namespace BarbarianLab
                 {
                     for (int w = 0; w < -widthDifference; w++)
                     {
-                        for (int h = 0; h < height; h++)
+                        for (int d = 0; d < depth; d++)
                         {
-                            tileList.RemoveAt(((h * width) + width) - (1 + h));
+                            int wIndex = ((d * width) + width) - (1 + d);
+                            BoB_Tile pt = tileList[wIndex];
+                            affectedTileStrings.Add(wIndex, $"{wIndex},{pt.id},{pt.h},{pt.col}");
+                            tileList.RemoveAt(wIndex);
                         }
                         cur_level.maxX--;
                         width = cur_level.maxX - cur_level.minX;
@@ -566,23 +778,30 @@ namespace BarbarianLab
                 // Update Height 
                 if (depthDifference > 0)
                 {
-                    for (int h = 0; h < depthDifference; h++)
+                    for (int d = 0; d < depthDifference; d++)
                     {
                         for (int w = 0; w < width; w++)
                         {
                             tileList.Add(t);
                         }
                         cur_level.maxY++;
-                        height = cur_level.maxY - cur_level.minY;
+                        depth = cur_level.maxY - cur_level.minY;
                     }
                 }
                 else if (depthDifference < 0)
                 {
-                    for (int h = 0; h < -depthDifference; h++)
+                    for (int d = 0; d < -depthDifference; d++)
                     {
-                        tileList.RemoveRange(((height - 1) * width), width);
+                        //tileList.RemoveRange(((depth - 1) * width), width);
+                        for (int w = 0; w < width; w++)
+                        {
+                            int dIndex = tileList.Count - 1;
+                            BoB_Tile pt = tileList[dIndex];
+                            affectedTileStrings.Add(dIndex, $"{dIndex},{pt.id},{pt.h},{pt.col}");
+                            tileList.RemoveAt(dIndex);
+                        }
                         cur_level.maxY--;
-                        height = cur_level.maxY - cur_level.minY;
+                        depth = cur_level.maxY - cur_level.minY;
                     }
                 }
                 cur_level.tiles = tileList.ToArray();
@@ -646,6 +865,7 @@ namespace BarbarianLab
             loading = true;
             try
             {
+                AddLevelHistory();
                 BoB_Position p1 = new BoB_Position()
                 {
                     x = (int)p1x.Value,
@@ -751,6 +971,7 @@ namespace BarbarianLab
             loading = true;
             if (EnemyList.SelectedIndex > -1)
             {
+                AddLevelHistory();
                 BoB_Position e_pos = new BoB_Position()
                 {
                     x = (int)ex.Value,
@@ -815,6 +1036,7 @@ namespace BarbarianLab
             if (!cur_level.parse_succeeded) return;
             if (cur_level.enemies.Length < maxEnemyCount || maxEnemyCount <= 0)
             {
+                AddLevelHistory();
                 BoB_Position pos = new BoB_Position()
                 { x = 0, y = 0 };
                 List<BoB_Position> enemy_positions = cur_level.enemies.ToList();
@@ -829,6 +1051,7 @@ namespace BarbarianLab
             if (!cur_level.parse_succeeded) return;
             if (cur_level.enemies.Length > 1)
             {
+                AddLevelHistory();
                 List<BoB_Position> enemy_positions = cur_level.enemies.ToList();
                 int index = EnemyList.Items.Count - 1;
                 if (EnemyList.SelectedIndex >= 0)
@@ -852,7 +1075,8 @@ namespace BarbarianLab
             try
             {
                 cur_level = allLevels[levelSelectionBox.SelectedIndex];
-                LoadLevelData();
+                levelHistory = new List<Level>();
+                LoadLevelData(false);
             }
             catch { }
             loading = false;
@@ -917,21 +1141,86 @@ namespace BarbarianLab
         }
         private void LevelMap_MouseUp(object sender, MouseEventArgs e)
         {
-            if (toolActing)
-            {
-                toolActing = false;
-                UpdateLevelImage(sender, e);
-            }
+            ToolDeactivate();
+            UpdateLevelImage(sender, e);
         }
         private void LevelMap_MouseLeave(object sender, EventArgs e)
         {
-            if (toolActing)
-            {
-                toolActing = false;
-            }
+            ToolDeactivate();
             tileX = -1;
             tileY = -1;
             UpdateLevelImage(sender, e);
+        }
+        private void ToolDeactivate()
+        {
+            toolActing = false;
+            if (selectingX != -1 && selectingY != -1)
+            {
+                int selectMinX = Math.Min(tileX, selectingX);
+                int selectMinY = Math.Min(tileY, selectingY);
+                int selectMaxX = Math.Max(tileX, selectingX);
+                int selectMaxY = Math.Max(tileY, selectingY);
+                MakeSelection(selectMinX, selectMinY, selectMaxX, selectMaxY);
+                selectingX = -1;
+                selectingY = -1;
+            }
+            draggingSelectionOffsetX = null;
+            draggingSelectionOffsetY = null;
+        }
+        private void AddLevelHistory()
+        {
+            Level l = new Level();
+            l.parse_succeeded = cur_level.parse_succeeded;
+            l.minX = cur_level.minX;
+            l.maxX = cur_level.maxX;
+            l.minY = cur_level.minY;
+            l.maxY = cur_level.maxY;
+            l.players = new BoB_Position[cur_level.players.Length];
+            l.enemy_type = cur_level.enemy_type;
+            l.enemies = new BoB_Position[cur_level.enemies.Length];
+            l.tiles = new BoB_Tile[cur_level.tiles.Length];
+            for (int i = 0; i < l.players.Length; i++)
+            {
+                l.players[i] = new BoB_Position() { x = cur_level.players[i].x, y = cur_level.players[i].y };
+            }
+            for (int i = 0; i < l.enemies.Length; i++)
+            {
+                l.enemies[i] = new BoB_Position() { x = cur_level.enemies[i].x, y = cur_level.enemies[i].y };
+            }
+            for (int i = 0; i < l.tiles.Length; i++)
+            {
+                l.tiles[i] = new BoB_Tile()
+                {
+                    id = cur_level.tiles[i].id,
+                    h = cur_level.tiles[i].h,
+                    col = cur_level.tiles[i].col
+                };
+            }
+            levelHistory.Add(l);
+            if (levelHistory.Count > 255)
+            {
+                levelHistory.RemoveAt(0);
+            }
+        }
+        private void Undo(object sender, EventArgs e)
+        {
+            floatingSelectionX = -1;
+            floatingSelectionY = -1;
+            floatingSelectionW = -1;
+            floatingSelectionD = -1;
+            floatingSelection = null;
+            if (levelHistory.Count < 1)
+            {
+                Debug.WriteLine("No further level history!");
+                return;
+            }
+            cur_level = levelHistory[levelHistory.Count - 1];
+            levelHistory.RemoveAt(levelHistory.Count - 1);
+            LoadLevelData(true);
+        }
+        private void Redo(object sender, EventArgs e)
+        {
+
         }
         private void LevelMap_MouseMove(object sender, MouseEventArgs e)
         {
@@ -972,10 +1261,16 @@ namespace BarbarianLab
                 UpdateLevelImage(sender, e);
             }
         }
+
         private Bitmap LevelImage()
         {
             int width = cur_level.maxX - cur_level.minX;
             int height = cur_level.maxY - cur_level.minY;
+            int selectMinX = Math.Min(tileX, selectingX);
+            int selectMinY = Math.Min(tileY, selectingY);
+            int selectMaxX = Math.Max(tileX, selectingX);
+            int selectMaxY = Math.Max(tileY, selectingY);
+
             Bitmap bmp = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
             for (int y = 0; y < height; y++)
             {
@@ -983,6 +1278,45 @@ namespace BarbarianLab
                 {
                     BoB_Tile t = cur_level.tiles[(y * width) + x];
                     Color pixCol = TileColor(t);
+                    if (floatingSelection != null)
+                    {
+                        if (x >= floatingSelectionX && x <= floatingSelectionX + floatingSelectionW)
+                        {
+                            if (y >= floatingSelectionY && y <= floatingSelectionY + floatingSelectionD)
+                            {
+                                int index = ((y - floatingSelectionY) * floatingSelectionW) + (y - floatingSelectionY) + (x - floatingSelectionX);
+                                if (index >= 0 && index < floatingSelection.Length)
+                                {
+                                    BoB_Tile t2 = floatingSelection[index];
+                                    if (t2.id > 1)
+                                    {
+                                        Color col1 = TileColor(t2);
+                                        Color col2 = HighlightColor();
+                                        int r = Math.Min((int)Math.Round((col1.R * 0.8) + (col2.R * 0.2)), 255);
+                                        int g = Math.Min((int)Math.Round((col1.G * 0.8) + (col2.G * 0.2)), 255);
+                                        int b = Math.Min((int)Math.Round((col1.B * 0.8) + (col2.B * 0.2)), 255);
+                                        pixCol = Color.FromArgb(r, g, b);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else if (selectingX != -1 && selectingY != -1)
+                    {
+                        // Highlight selection range
+                        if (x >= selectMinX && x <= selectMaxX)
+                        {
+                            if (y >= selectMinY && y <= selectMaxY)
+                            {
+                                Color col1 = TileColor(t);
+                                Color col2 = HighlightColor();
+                                int r = Math.Min((int)Math.Round((col1.R * 0.8) + (col2.R * 0.2)), 255);
+                                int g = Math.Min((int)Math.Round((col1.G * 0.8) + (col2.G * 0.2)), 255);
+                                int b = Math.Min((int)Math.Round((col1.B * 0.8) + (col2.B * 0.2)), 255);
+                                pixCol = Color.FromArgb(r, g, b);
+                            }
+                        }
+                    }
                     if (x == tileX && y == tileY && !banCursor)
                     {
                         pixCol = HighlightColor();
@@ -994,19 +1328,7 @@ namespace BarbarianLab
             {
                 for (int i = 0; i < 4; i++)
                 {
-                    Color playerCol = Color.FromArgb(0, 255, 0); // Green
-                    switch (i)
-                    {
-                        case 1:
-                            playerCol = Color.FromArgb(255, 0, 0); // Red
-                            break;
-                        case 2:
-                            playerCol = Color.FromArgb(0, 255, 255); // Blue
-                            break;
-                        case 3:
-                            playerCol = Color.FromArgb(255, 180, 0); // Orange
-                            break;
-                    }
+                    Color playerCol = playerColors[i];
                     BoB_Position p_pos = cur_level.players[i];
                     int relativeX = p_pos.x - cur_level.minX;
                     int relativeY = p_pos.y - cur_level.minY;
@@ -1021,7 +1343,7 @@ namespace BarbarianLab
                     int relativeY = e_pos.y - cur_level.minY;
                     if (relativeX >= 0 && relativeX < width && relativeY >= 0 && relativeY < height)
                     {
-                        bmp.SetPixel(relativeX, relativeY, Color.FromArgb(200, 50, 115)); // Dark Pink
+                        bmp.SetPixel(relativeX, relativeY, enemyColor);
                     }
                 }
             }
@@ -1029,9 +1351,9 @@ namespace BarbarianLab
 
             // Scale up
             Bitmap bmp2;
-            Graphics g = Graphics.FromImage(bmp2 = new Bitmap(LevelMap.Width, LevelMap.Height));
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            g.PixelOffsetMode = PixelOffsetMode.Half;
+            Graphics gph = Graphics.FromImage(bmp2 = new Bitmap(LevelMap.Width, LevelMap.Height));
+            gph.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            gph.PixelOffsetMode = PixelOffsetMode.Half;
 
             double tileScale;
             double levelAspect = width / (double)height;
@@ -1052,8 +1374,8 @@ namespace BarbarianLab
                 y_scale = (int)Math.Round(tileScale * height);
                 y_offset = (LevelMap.Height - y_scale) / 2;
             }
-            g.DrawImage(bmp, x_offset, y_offset, x_scale, y_scale);
-            g.Dispose();
+            gph.DrawImage(bmp, x_offset, y_offset, x_scale, y_scale);
+            gph.Dispose();
             return bmp2;
         }
 
@@ -1065,13 +1387,16 @@ namespace BarbarianLab
                 int i = (tileY * width) + tileX;
                 BoB_Tile t = cur_level.tiles[i];
 
-                if (!mouseDragVer && !rightClickVer)
+                if (!mouseDragVer && !rightClickVer && toolType != "select")
                 {
-                    affectedTiles = new Dictionary<int, BoB_Tile>();
+                    // Initial Left CLick
+                    affectedTileStrings = new Dictionary<int, string>();
                     toolActing = true;
+                    AddLevelHistory();
                 }
                 if (rightClickVer)
                 {
+                    // Right Click
                     t_Collision.Checked = true;
                     t_ID.Value = t.id;
                     t_Height.Text = t.h.ToString();
@@ -1081,9 +1406,10 @@ namespace BarbarianLab
                         t_Collision.Checked = false;
                     }
                 }
-                else if (!affectedTiles.ContainsKey(i))
+                else if (!affectedTileStrings.ContainsKey(i) || toolType == "select")
                 {
-                    affectedTiles.Add(i, t);
+                    // Left Click
+                    if (toolType != "select") affectedTileStrings.Add(i, $"{i},{t.id},{t.h},{t.col}");
                     switch (toolType)
                     {
                         case "paint":
@@ -1188,6 +1514,30 @@ namespace BarbarianLab
                             }
                             UpdateLevelHeights();
                             break;
+                        case "select":
+                            if (!mouseDragVer)
+                            {
+                                if (floatingSelection == null)
+                                {
+                                    selectingX = tileX;
+                                    selectingY = tileY;
+                                }
+                                else
+                                {
+                                    if (IsPointWithinTileSelection(tileX, tileY))
+                                    {
+                                        draggingSelectionOffsetX = floatingSelectionX - tileX;
+                                        draggingSelectionOffsetY = floatingSelectionY - tileY;
+                                    }
+                                    else PlaceSelection();
+                                }
+                            }
+                            else if (draggingSelectionOffsetX != null && draggingSelectionOffsetY != null)
+                            {
+                                floatingSelectionX = tileX + (int)draggingSelectionOffsetX;
+                                floatingSelectionY = tileY + (int)draggingSelectionOffsetY;
+                            }
+                            break;
                     }
                 }
             }
@@ -1198,7 +1548,8 @@ namespace BarbarianLab
             {
                 return Color.White;
             }
-            return Color.Yellow;
+            Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            return t.highlight;
         }
         private Color TileColor(BoB_Tile t)
         {
@@ -1254,6 +1605,27 @@ namespace BarbarianLab
             }
             else return Color.Magenta;
         }
+        public static Color ColorFromStringOrRGB(string input)
+        {
+            Color color = Color.Magenta;
+            try
+            {
+                string[] data = input.Split(",", StringSplitOptions.TrimEntries);
+                int r = int.Parse(data[0]);
+                int g = int.Parse(data[1]);
+                int b = int.Parse(data[2]);
+                color = Color.FromArgb(r, g, b);
+            }
+            catch
+            {
+                try
+                {
+                    color = Color.FromName(input);
+                }
+                catch { }
+            }
+            return color;
+        }
         public static Color ColorFromHSV(double hue, double saturation, double value)
         {
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
@@ -1278,6 +1650,172 @@ namespace BarbarianLab
                 default:
                     return Color.FromArgb(255, v, p, q);
             }
+        }
+
+        private void ThemeSelectionBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (ThemeSelectionBox.SelectedIndex == -1) return;
+            Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            UpdateTheme(t);
+            SelectTool(0);
+        }
+        private void MakeSelection(int minX, int minY, int maxX, int maxY)
+        {
+            AddLevelHistory();
+            floatingSelection = null;
+            int nonAirTileCount = 0;
+            List<BoB_Tile> floatingTiles = new List<BoB_Tile>();
+            int width = cur_level.maxX - cur_level.minX;
+            int depth = cur_level.maxY - cur_level.minY;
+            for (int y = 0; y < depth; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (x >= minX && x <= maxX && y >= minY && y <= maxY)
+                    {
+                        BoB_Tile t = cur_level.tiles[(y * width) + x];
+                        BoB_Tile t2 = new BoB_Tile()
+                        {
+                            id = t.id,
+                            h = t.h,
+                            col = t.col
+                        };
+                        if (t2.id > 1) nonAirTileCount++;
+                        floatingTiles.Add(t2);
+                        Debug.WriteLine($"Adding Tile To Selection, X: {x}, Y: {y}, ID: {t2.id}");
+                        t.id = 1;
+                        t.h = 0;
+                        t.col = 0;
+                        cur_level.tiles[(y * width) + x] = t;
+                    }
+                }
+            }
+            if (nonAirTileCount > 0)
+            {
+                floatingSelectionX = minX;
+                floatingSelectionY = minY;
+                floatingSelectionW = maxX - minX;
+                floatingSelectionD = maxY - minY;
+                floatingSelection = floatingTiles.ToArray();
+            }
+        }
+        private void PlaceSelection()
+        {
+            AddLevelHistory();
+            if (floatingSelection == null) return;
+            for (int d = 0; d <= floatingSelectionD; d++)
+            {
+                for (int w = 0; w <= floatingSelectionW; w++)
+                {
+                    int width = cur_level.maxX - cur_level.minX;
+                    int depth = cur_level.maxY - cur_level.minY;
+                    if (w + floatingSelectionX >= 0 && w + floatingSelectionX < width)
+                    {
+                        if (d + floatingSelectionY >= 0 && d + floatingSelectionY < depth)
+                        {
+                            BoB_Tile t = floatingSelection[(d * floatingSelectionW) + d + w];
+                            if (t.id > 1)
+                            {
+                                int targetIndex = ((floatingSelectionY + d) * width) + (floatingSelectionX + w);
+                                if (targetIndex >= 0 && targetIndex < cur_level.tiles.Length)
+                                {
+                                    cur_level.tiles[targetIndex] = t;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            floatingSelectionX = -1;
+            floatingSelectionY = -1;
+            floatingSelectionW = -1;
+            floatingSelectionD = -1;
+            floatingSelection = null;
+        }
+        private void CopySelection(object sender, EventArgs e)
+        {
+            if (floatingSelection == null) return;
+            string output = $"{floatingSelectionW},{floatingSelectionD},";
+            for (int i = 0; i < floatingSelection.Length; i++)
+            {
+                BoB_Tile t = floatingSelection[i];
+                output += $"{t.id},{t.h},{t.col}";
+                if (i < floatingSelection.Length - 1) output += ",";
+            }
+            Clipboard.SetText(output);
+        }
+        private void PasteSelection(object sender, EventArgs e)
+        {
+            string input = Clipboard.GetText();
+            floatingSelectionX = -1;
+            floatingSelectionY = -1;
+            floatingSelectionW = -1;
+            floatingSelectionD = -1;
+            floatingSelection = null;
+            SelectTool(3);
+            try
+            {
+                string[] data = input.Split(",", StringSplitOptions.TrimEntries);
+                List<BoB_Tile> tileList = new List<BoB_Tile>();
+                floatingSelectionX = 0;
+                floatingSelectionY = 0;
+                floatingSelectionW = int.Parse(data[0]);
+                floatingSelectionD = int.Parse(data[1]);
+                for (int i = 0; i < (data.Length - 2) / 3; i++)
+                {
+                    BoB_Tile t = new BoB_Tile()
+                    {
+                        id = uint.Parse(data[(i * 3) + 2]),
+                        h = decimal.Parse(data[(i * 3) + 3]),
+                        col = uint.Parse(data[(i * 3) + 4])
+                    };
+                    tileList.Add(t);
+                }
+                floatingSelection = tileList.ToArray();
+            }
+            catch
+            {
+                Debug.WriteLine("Clipboard contained invalid Tile Data...");
+            }
+        }
+        private void DeleteSelection(object sender, EventArgs e)
+        {
+            floatingSelectionX = -1;
+            floatingSelectionY = -1;
+            floatingSelectionW = -1;
+            floatingSelectionD = -1;
+            floatingSelection = null;
+        }
+        bool IsPointWithinTileSelection(int x, int y)
+        {
+            if (x >= floatingSelectionX && x <= floatingSelectionX + floatingSelectionW)
+            {
+                if (y >= floatingSelectionY && y <= floatingSelectionY + floatingSelectionD)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void CutSelection(object sender, EventArgs e)
+        {
+            CopySelection(sender, e);
+            DeleteSelection(sender, e);
+        }
+
+        public struct Theme
+        {
+            public Color bg;
+            public Color level_bg;
+            public Color ui;
+            public Color btn;
+            public Color bg_text;
+            public Color ui_text;
+            public Color btn_text;
+            public Color tool;
+            public Color tool_pressed;
+            public Color highlight;
         }
     }
 }

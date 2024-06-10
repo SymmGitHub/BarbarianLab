@@ -43,6 +43,7 @@
             e_Name = new ComboBox();
             label14 = new Label();
             splitContainer1 = new SplitContainer();
+            ToolSelect = new Button();
             t_ID = new NumericUpDown();
             label1 = new Label();
             elev_increment = new TextBox();
@@ -70,9 +71,16 @@
             exportPlaylistToolStripMenuItem = new ToolStripMenuItem();
             saveScreenshotToolStripMenuItem = new ToolStripMenuItem();
             editToolStripMenuItem = new ToolStripMenuItem();
+            undoToolStripMenuItem = new ToolStripMenuItem();
+            copyTileSelectionToolStripMenuItem = new ToolStripMenuItem();
+            cutTileSelectionToolStripMenuItem = new ToolStripMenuItem();
+            pasteTileSelectionToolStripMenuItem = new ToolStripMenuItem();
+            deleteTileSelectionToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator3 = new ToolStripSeparator();
             unselectToolsToolStripMenuItem = new ToolStripMenuItem();
             paintToolToolStripMenuItem = new ToolStripMenuItem();
             eraseToolToolStripMenuItem = new ToolStripMenuItem();
+            selectionToolToolStripMenuItem = new ToolStripMenuItem();
             collisionToolToolStripMenuItem = new ToolStripMenuItem();
             elevationToolToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator2 = new ToolStripSeparator();
@@ -88,6 +96,7 @@
             viewTileHeightMapToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
             showEntitiesToolStripMenuItem = new ToolStripMenuItem();
+            ThemeSelectionBox = new ToolStripComboBox();
             label12 = new Label();
             label13 = new Label();
             toolTip1 = new ToolTip(components);
@@ -281,6 +290,7 @@
             // 
             // splitContainer1.Panel1
             // 
+            splitContainer1.Panel1.Controls.Add(ToolSelect);
             splitContainer1.Panel1.Controls.Add(t_ID);
             splitContainer1.Panel1.Controls.Add(label1);
             splitContainer1.Panel1.Controls.Add(elev_increment);
@@ -309,6 +319,19 @@
             splitContainer1.SplitterDistance = 275;
             splitContainer1.TabIndex = 39;
             // 
+            // ToolSelect
+            // 
+            ToolSelect.BackColor = Color.FromArgb(200, 180, 200);
+            ToolSelect.BackgroundImage = Properties.Resources.Select;
+            ToolSelect.BackgroundImageLayout = ImageLayout.Zoom;
+            ToolSelect.Location = new Point(116, 36);
+            ToolSelect.Name = "ToolSelect";
+            ToolSelect.Size = new Size(48, 48);
+            ToolSelect.TabIndex = 51;
+            toolTip1.SetToolTip(ToolSelect, "Collision Tool (Alt + 3)");
+            ToolSelect.UseVisualStyleBackColor = false;
+            ToolSelect.Click += ToolSelect_Click;
+            // 
             // t_ID
             // 
             t_ID.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
@@ -326,7 +349,7 @@
             // 
             label1.AutoSize = true;
             label1.ForeColor = SystemColors.Control;
-            label1.Location = new Point(8, 109);
+            label1.Location = new Point(62, 93);
             label1.Name = "label1";
             label1.Size = new Size(124, 20);
             label1.TabIndex = 41;
@@ -336,9 +359,9 @@
             // 
             elev_increment.BackColor = Color.FromArgb(200, 180, 200);
             elev_increment.ForeColor = SystemColors.WindowText;
-            elev_increment.Location = new Point(140, 106);
+            elev_increment.Location = new Point(192, 90);
             elev_increment.Name = "elev_increment";
-            elev_increment.Size = new Size(126, 27);
+            elev_increment.Size = new Size(80, 27);
             elev_increment.TabIndex = 50;
             elev_increment.Text = "0.25";
             // 
@@ -347,9 +370,9 @@
             ToolElevate.BackColor = Color.FromArgb(200, 180, 200);
             ToolElevate.BackgroundImage = Properties.Resources.Elevate;
             ToolElevate.BackgroundImageLayout = ImageLayout.Zoom;
-            ToolElevate.Location = new Point(206, 36);
+            ToolElevate.Location = new Point(224, 36);
             ToolElevate.Name = "ToolElevate";
-            ToolElevate.Size = new Size(60, 60);
+            ToolElevate.Size = new Size(48, 48);
             ToolElevate.TabIndex = 49;
             ToolElevate.TextAlign = ContentAlignment.MiddleLeft;
             toolTip1.SetToolTip(ToolElevate, "Elevation Tool (Alt + 4)");
@@ -392,22 +415,23 @@
             // 
             t_Collision.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             t_Collision.AutoSize = true;
+            t_Collision.BackColor = Color.Transparent;
             t_Collision.ForeColor = SystemColors.Control;
             t_Collision.Location = new Point(66, 647);
             t_Collision.Name = "t_Collision";
             t_Collision.Size = new Size(117, 24);
             t_Collision.TabIndex = 44;
             t_Collision.Text = "Has Collision";
-            t_Collision.UseVisualStyleBackColor = true;
+            t_Collision.UseVisualStyleBackColor = false;
             // 
             // ToolCollision
             // 
             ToolCollision.BackColor = Color.FromArgb(200, 180, 200);
             ToolCollision.BackgroundImage = Properties.Resources.Collision;
             ToolCollision.BackgroundImageLayout = ImageLayout.Zoom;
-            ToolCollision.Location = new Point(140, 36);
+            ToolCollision.Location = new Point(170, 36);
             ToolCollision.Name = "ToolCollision";
-            ToolCollision.Size = new Size(60, 60);
+            ToolCollision.Size = new Size(48, 48);
             ToolCollision.TabIndex = 43;
             toolTip1.SetToolTip(ToolCollision, "Collision Tool (Alt + 3)");
             ToolCollision.UseVisualStyleBackColor = false;
@@ -431,9 +455,9 @@
             ToolErase.BackColor = Color.FromArgb(200, 180, 200);
             ToolErase.BackgroundImage = Properties.Resources.Erase;
             ToolErase.BackgroundImageLayout = ImageLayout.Zoom;
-            ToolErase.Location = new Point(74, 36);
+            ToolErase.Location = new Point(62, 36);
             ToolErase.Name = "ToolErase";
-            ToolErase.Size = new Size(60, 60);
+            ToolErase.Size = new Size(48, 48);
             ToolErase.TabIndex = 42;
             toolTip1.SetToolTip(ToolErase, "Erase Tool (Alt + 2)");
             ToolErase.UseVisualStyleBackColor = false;
@@ -447,7 +471,7 @@
             ToolPaint.ForeColor = SystemColors.Control;
             ToolPaint.Location = new Point(8, 36);
             ToolPaint.Name = "ToolPaint";
-            ToolPaint.Size = new Size(60, 60);
+            ToolPaint.Size = new Size(48, 48);
             ToolPaint.TabIndex = 40;
             toolTip1.SetToolTip(ToolPaint, "Paint Tool (Alt + 1)");
             ToolPaint.UseVisualStyleBackColor = false;
@@ -469,9 +493,10 @@
             t_Sprite.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             t_Sprite.BackColor = Color.FromArgb(200, 180, 200);
             t_Sprite.BackgroundImageLayout = ImageLayout.Zoom;
-            t_Sprite.Location = new Point(8, 139);
+            t_Sprite.BorderStyle = BorderStyle.FixedSingle;
+            t_Sprite.Location = new Point(8, 123);
             t_Sprite.Name = "t_Sprite";
-            t_Sprite.Size = new Size(264, 436);
+            t_Sprite.Size = new Size(264, 452);
             t_Sprite.TabIndex = 0;
             t_Sprite.TabStop = false;
             // 
@@ -514,6 +539,7 @@
             // tipText
             // 
             tipText.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tipText.BackColor = Color.Transparent;
             tipText.ForeColor = SystemColors.Control;
             tipText.Location = new Point(3, 631);
             tipText.Name = "tipText";
@@ -596,10 +622,56 @@
             // 
             // editToolStripMenuItem
             // 
-            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { unselectToolsToolStripMenuItem, paintToolToolStripMenuItem, eraseToolToolStripMenuItem, collisionToolToolStripMenuItem, elevationToolToolStripMenuItem, toolStripSeparator2, multiplyAllTileHeightsToolStripMenuItem, roundTileHeightsToThousandthsToolStripMenuItem, setAllTileCollisionsToDefaultsToolStripMenuItem });
+            editToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { undoToolStripMenuItem, copyTileSelectionToolStripMenuItem, cutTileSelectionToolStripMenuItem, pasteTileSelectionToolStripMenuItem, deleteTileSelectionToolStripMenuItem, toolStripSeparator3, unselectToolsToolStripMenuItem, paintToolToolStripMenuItem, eraseToolToolStripMenuItem, selectionToolToolStripMenuItem, collisionToolToolStripMenuItem, elevationToolToolStripMenuItem, toolStripSeparator2, multiplyAllTileHeightsToolStripMenuItem, roundTileHeightsToThousandthsToolStripMenuItem, setAllTileCollisionsToDefaultsToolStripMenuItem });
             editToolStripMenuItem.Name = "editToolStripMenuItem";
+            editToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Delete;
             editToolStripMenuItem.Size = new Size(49, 24);
             editToolStripMenuItem.Text = "Edit";
+            // 
+            // undoToolStripMenuItem
+            // 
+            undoToolStripMenuItem.Name = "undoToolStripMenuItem";
+            undoToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Z;
+            undoToolStripMenuItem.Size = new Size(345, 26);
+            undoToolStripMenuItem.Text = "Undo";
+            undoToolStripMenuItem.Click += Undo;
+            // 
+            // copyTileSelectionToolStripMenuItem
+            // 
+            copyTileSelectionToolStripMenuItem.Name = "copyTileSelectionToolStripMenuItem";
+            copyTileSelectionToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.C;
+            copyTileSelectionToolStripMenuItem.Size = new Size(345, 26);
+            copyTileSelectionToolStripMenuItem.Text = "Copy Tile Selection";
+            copyTileSelectionToolStripMenuItem.Click += CopySelection;
+            // 
+            // cutTileSelectionToolStripMenuItem
+            // 
+            cutTileSelectionToolStripMenuItem.Name = "cutTileSelectionToolStripMenuItem";
+            cutTileSelectionToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.X;
+            cutTileSelectionToolStripMenuItem.Size = new Size(345, 26);
+            cutTileSelectionToolStripMenuItem.Text = "Cut Tile Selection";
+            cutTileSelectionToolStripMenuItem.Click += CutSelection;
+            // 
+            // pasteTileSelectionToolStripMenuItem
+            // 
+            pasteTileSelectionToolStripMenuItem.Name = "pasteTileSelectionToolStripMenuItem";
+            pasteTileSelectionToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.V;
+            pasteTileSelectionToolStripMenuItem.Size = new Size(345, 26);
+            pasteTileSelectionToolStripMenuItem.Text = "Paste Tile Selection";
+            pasteTileSelectionToolStripMenuItem.Click += PasteSelection;
+            // 
+            // deleteTileSelectionToolStripMenuItem
+            // 
+            deleteTileSelectionToolStripMenuItem.Name = "deleteTileSelectionToolStripMenuItem";
+            deleteTileSelectionToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Delete;
+            deleteTileSelectionToolStripMenuItem.Size = new Size(345, 26);
+            deleteTileSelectionToolStripMenuItem.Text = "Delete Tile Selection";
+            deleteTileSelectionToolStripMenuItem.Click += DeleteSelection;
+            // 
+            // toolStripSeparator3
+            // 
+            toolStripSeparator3.Name = "toolStripSeparator3";
+            toolStripSeparator3.Size = new Size(342, 6);
             // 
             // unselectToolsToolStripMenuItem
             // 
@@ -625,10 +697,18 @@
             eraseToolToolStripMenuItem.Text = "Erase Tool";
             eraseToolToolStripMenuItem.Click += eraseToolToolStripMenuItem_Click;
             // 
+            // selectionToolToolStripMenuItem
+            // 
+            selectionToolToolStripMenuItem.Name = "selectionToolToolStripMenuItem";
+            selectionToolToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D3;
+            selectionToolToolStripMenuItem.Size = new Size(345, 26);
+            selectionToolToolStripMenuItem.Text = "Selection Tool";
+            selectionToolToolStripMenuItem.Click += selectionToolToolStripMenuItem_Click;
+            // 
             // collisionToolToolStripMenuItem
             // 
             collisionToolToolStripMenuItem.Name = "collisionToolToolStripMenuItem";
-            collisionToolToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D3;
+            collisionToolToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D4;
             collisionToolToolStripMenuItem.Size = new Size(345, 26);
             collisionToolToolStripMenuItem.Text = "Collision Tool";
             collisionToolToolStripMenuItem.Click += collisionToolToolStripMenuItem_Click;
@@ -636,7 +716,7 @@
             // elevationToolToolStripMenuItem
             // 
             elevationToolToolStripMenuItem.Name = "elevationToolToolStripMenuItem";
-            elevationToolToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D4;
+            elevationToolToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D5;
             elevationToolToolStripMenuItem.Size = new Size(345, 26);
             elevationToolToolStripMenuItem.Text = "Elevation Tool";
             elevationToolToolStripMenuItem.Click += elevationToolToolStripMenuItem_Click;
@@ -682,7 +762,7 @@
             // 
             // viewToolStripMenuItem
             // 
-            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { viewContextualToolStripMenuItem, viewTileColorToolStripMenuItem, viewTileCollisionMapToolStripMenuItem, viewTileHeightMapToolStripMenuItem, toolStripSeparator1, showEntitiesToolStripMenuItem });
+            viewToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { viewContextualToolStripMenuItem, viewTileColorToolStripMenuItem, viewTileCollisionMapToolStripMenuItem, viewTileHeightMapToolStripMenuItem, toolStripSeparator1, showEntitiesToolStripMenuItem, ThemeSelectionBox });
             viewToolStripMenuItem.Name = "viewToolStripMenuItem";
             viewToolStripMenuItem.Size = new Size(55, 24);
             viewToolStripMenuItem.Text = "View";
@@ -737,6 +817,12 @@
             showEntitiesToolStripMenuItem.Size = new Size(261, 26);
             showEntitiesToolStripMenuItem.Text = "Show Entities";
             showEntitiesToolStripMenuItem.Click += UpdateLevelImage;
+            // 
+            // ThemeSelectionBox
+            // 
+            ThemeSelectionBox.Name = "ThemeSelectionBox";
+            ThemeSelectionBox.Size = new Size(175, 28);
+            ThemeSelectionBox.SelectedIndexChanged += ThemeSelectionBox_SelectedIndexChanged;
             // 
             // label12
             // 
@@ -1148,5 +1234,16 @@
         private ToolStripMenuItem exportPlaylistToolStripMenuItem;
         private Button removeLevel;
         private ToolStripMenuItem saveLevelToolStripMenuItem;
+        private ToolStripMenuItem undoToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator3;
+        private Button ToolSelect;
+        private ToolStripMenuItem selectionToolToolStripMenuItem;
+        private ToolStripMenuItem selectThemeToolStripMenuItem;
+        private ToolStripComboBox ThemeSelectionBox;
+        private ToolStripComboBox toolStripComboBox1;
+        private ToolStripMenuItem copyTileSelectionToolStripMenuItem;
+        private ToolStripMenuItem pasteTileSelectionToolStripMenuItem;
+        private ToolStripMenuItem deleteTileSelectionToolStripMenuItem;
+        private ToolStripMenuItem cutTileSelectionToolStripMenuItem;
     }
 }

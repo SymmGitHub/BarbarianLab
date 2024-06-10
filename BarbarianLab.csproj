@@ -7,6 +7,12 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>Barb.ico</ApplicationIcon>
+    <Title>Barbarian Lab</Title>
+    <Version>1.1.0</Version>
+    <Authors>Symm</Authors>
+    <Company>N/A</Company>
+    <Product>BarbarianLab</Product>
+    <Description>A Level Editor UI for Back Off Barbarian, the minigame in Castle Crashers.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +29,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Textures\Collision.png" />
-    <EmbeddedResource Include="Textures\Copy.png" />
     <EmbeddedResource Include="Textures\Elevate.png" />
     <EmbeddedResource Include="Textures\Erase.png" />
     <EmbeddedResource Include="Textures\Paint.png" />
