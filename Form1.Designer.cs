@@ -1120,6 +1120,7 @@
             MinimumSize = new Size(1150, 770);
             Name = "Form1";
             Text = "Barbarian Lab";
+            FormClosing += Form1_FormClosing;
             Load += Form1_Load;
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel1.PerformLayout();

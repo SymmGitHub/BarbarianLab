@@ -89,7 +89,7 @@ namespace BarbarianLab.Utilities
             pastNull = false;
             try
             {
-                string outLine = read.ReadLine();
+                string? outLine = read.ReadLine();
                 if (outLine == null)
                 {
                     pastNull = true;
@@ -107,14 +107,62 @@ namespace BarbarianLab.Utilities
                 return "";
             }
         }
-
+        public void WriteConfig(string path)
+        {
+            var write = new StreamWriter(path);
+            foreach (string section in sections.Keys)
+            {
+                write.WriteLine($"{SecHead} {section}");
+                foreach (string setting in sections[section].settings.Keys)
+                {
+                    string data = "";
+                    for (int i = 0; i < sections[section].settings[setting].data.Length; i++)
+                    {
+                        data += sections[section].settings[setting].data[i];
+                        if (i < sections[section].settings[setting].data.Length - 1)
+                        {
+                            data += $" {SplitMark} ";
+                        }
+                    }
+                    write.WriteLine($"{setting} {EqualMark} {data}");
+                }
+                write.WriteLine("");
+            }
+            write.Close();
+            write.Dispose();
+        }
+        public void OverwriteData(string section, string setting, string data)
+        {
+            if (sections.ContainsKey(section))
+            {
+                if (sections[section].settings.ContainsKey(setting))
+                {
+                    ConfigSection newSection = new ConfigSection();
+                    foreach (string settingName in sections[section].settings.Keys)
+                    {
+                        if (settingName == setting)
+                        {
+                            Setting newSetting = new Setting();
+                            newSetting.data = data.Split(SplitMark, StringSplitOptions.TrimEntries);
+                            newSection.settings.Add(settingName, newSetting);
+                        }
+                        else
+                        {
+                            newSection.settings.Add(settingName, sections[section].settings[settingName]);
+                        }
+                    }
+                    sections[section] = newSection;
+                }
+            }
+        }
     }
-    class ConfigSection
+    public class ConfigSection
     {
         public Dictionary<string, Setting> settings = new Dictionary<string, Setting>();
     }
-    struct Setting
+    public struct Setting
     {
         public string[] data;
     }
+    
 }

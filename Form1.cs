@@ -56,6 +56,8 @@ namespace BarbarianLab
         }
         private void Form1_Load(object sender, EventArgs e)
         {
+            int previousTheme = 0;
+
             config.ParseConfig(AppDomain.CurrentDomain.BaseDirectory + "\\Config.txt");
             if (config.sections.ContainsKey("Miscellaneous"))
             {
@@ -118,6 +120,11 @@ namespace BarbarianLab
                     }
                     catch { }
                 }
+                try
+                {
+                    int.TryParse(config.sections["Miscellaneous"].settings["Previous Theme Index"].data[0], out previousTheme);
+                }
+                catch { }
             }
             if (config.sections.ContainsKey("Themes"))
             {
@@ -223,8 +230,13 @@ namespace BarbarianLab
             t_ID.Value = 2;
             if (ThemeSelectionBox.Items.Count > 0)
             {
-                ThemeSelectionBox.SelectedIndex = 0;
+                previousTheme = Math.Clamp(previousTheme, 0, ThemeSelectionBox.Items.Count - 1);
+                ThemeSelectionBox.SelectedIndex = previousTheme;
             }
+        }
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            config.WriteConfig(AppDomain.CurrentDomain.BaseDirectory + "\\Config.txt");
         }
         private void UpdateTheme(Theme t)
         {
@@ -1656,6 +1668,11 @@ namespace BarbarianLab
         {
             if (ThemeSelectionBox.SelectedIndex == -1) return;
             Theme t = windowThemes[ThemeSelectionBox.SelectedIndex];
+            try
+            {
+                config.OverwriteData("Miscellaneous", "Previous Theme Index", ThemeSelectionBox.SelectedIndex.ToString());
+            }
+            catch { }
             UpdateTheme(t);
             SelectTool(0);
         }
@@ -1803,7 +1820,6 @@ namespace BarbarianLab
             CopySelection(sender, e);
             DeleteSelection(sender, e);
         }
-
         public struct Theme
         {
             public Color bg;
